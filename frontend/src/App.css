@@ -1,0 +1,141 @@
+.app {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.app-header h1 {
+  font-size: 1.4rem;
+  margin: 0 0 12px;
+}
+
+.app-header nav {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.app-header nav a {
+  padding: 8px 12px;
+  text-decoration: none;
+  color: var(--text-muted);
+  border-bottom: 2px solid transparent;
+}
+
+.app-header nav a.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+
+.cadastro-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.data-medicao {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 14px;
+}
+
+.field-grid .hint {
+  font-weight: 400;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.toggle-button {
+  flex: 1 1 140px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-muted);
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.toggle-button.is-true {
+  background: var(--success-bg);
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.toggle-button.is-false {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.injurias {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.injurias legend {
+  padding: 0 6px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.chip {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  color: var(--text);
+  width: auto;
+}
+
+.salvar {
+  padding: 16px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent-contrast);
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+}
+
+.salvar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.feedback {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.feedback.success {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.feedback.error {
+  background: var(--danger-bg);
+  color: var(--danger);
+}

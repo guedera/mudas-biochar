@@ -41,8 +41,15 @@ backend/    API e persistência dos dados
 data/       planilha(s) originais e scripts de importação
 ```
 
-A stack ainda será definida — por ora o projeto roda e é testado localmente. Um requisito de projeto é **custo zero de hospedagem/infra**; isso vai orientar as escolhas de stack e de onde o site fica hospedado.
+Backend em FastAPI, frontend ainda a definir (provavelmente site estático). Um requisito de projeto é **custo zero de hospedagem/infra**: Postgres gerenciado no Supabase (free tier) e frontend estático em Vercel/Netlify/Cloudflare Pages.
 
 ## Rodando localmente
 
-TBD — será documentado assim que a stack for escolhida.
+Backend (API):
+
+```
+cd backend
+uv run uvicorn app.main:app --reload
+```
+
+Veja `backend/README.md` para detalhes (endpoints, testes). Frontend: TBD.

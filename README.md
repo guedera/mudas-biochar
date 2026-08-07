@@ -12,7 +12,8 @@ Cada medição registrada tem os campos abaixo, nesta ordem:
 | Espécie | enum | `CF, CV, CS, ED, ES, MB, MC, MF, MH, MG, JP, ST, SG` |
 | Tratamento | enum | `T0` a `T9` |
 | Altura | float (1 casa decimal), opcional | cm, ex. `11.9`; pode ser `NA` |
-| Diâmetro | float (2 casas decimais), opcional | mm, ex. `1.96`; pode ser `NA` |
+| Diâmetro 1 | float (2 casas decimais), opcional | mm, ex. `1.96`; pode ser `NA` |
+| Diâmetro 2 | float (2 casas decimais), opcional | mm; preenchido só quando o caule é quadrado (2 medidas de diâmetro). Se o caule for normal (redondo), fica `NA` |
 | Folhas | binário | 1 = tem folhas, 0 = não tem |
 | Sobrevivência | binário | 1 = viva, 0 = morta |
 | Daninha | binário | 1 = tem daninha, 0 = não tem |
@@ -27,6 +28,10 @@ Cada medição registrada tem os campos abaixo, nesta ordem:
 3. **Dashboard** — visão geral dos dados (detalhes a definir).
 
 Há também uma planilha com medições já coletadas anteriormente, que precisa ser importada para o banco na primeira carga (ver `data/`).
+
+### Medições repetidas ao longo do tempo
+
+Uma mesma planta (identificada pela combinação Bloco + Espécie + Tratamento) é medida várias vezes ao longo do tempo, para permitir comparar a evolução dessa planta entre medições. Isso significa que o banco guarda um **histórico de medições**, não um cadastro único por planta — cada lançamento no cadastro é uma nova medição (com sua própria data), não uma edição da anterior.
 
 ## Estrutura do repositório
 

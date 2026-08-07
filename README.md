@@ -23,7 +23,7 @@ Cada medição registrada tem os campos abaixo, nesta ordem:
 
 ## Páginas planejadas
 
-1. **Cadastro** (principal) — formulário para lançar uma medição rapidamente em campo/laboratório.
+1. **Cadastro** (principal) — formulário para lançar uma medição rapidamente em campo/laboratório. Layout pensado primeiro para celular/tablet na vertical, já que é onde o formulário será usado na prática.
 2. **Relatório** — filtros (bloco, espécie, tratamento, etc.) e exportação em CSV/XLS.
 3. **Dashboard** — visão geral dos dados (detalhes a definir).
 
@@ -41,7 +41,7 @@ backend/    API e persistência dos dados
 data/       planilha(s) originais e scripts de importação
 ```
 
-Backend em FastAPI, frontend ainda a definir (provavelmente site estático). Um requisito de projeto é **custo zero de hospedagem/infra**: Postgres gerenciado no Supabase (free tier) e frontend estático em Vercel/Netlify/Cloudflare Pages.
+Backend em FastAPI, frontend em React + Vite. Um requisito de projeto é **custo zero de hospedagem/infra**: Postgres gerenciado no Supabase (free tier) e frontend estático em Vercel/Netlify/Cloudflare Pages.
 
 ## Rodando localmente
 
@@ -52,4 +52,11 @@ cd backend
 uv run uvicorn app.main:app --reload
 ```
 
-Veja `backend/README.md` para detalhes (endpoints, testes). Frontend: TBD.
+Frontend:
+
+```
+cd frontend
+npm run dev
+```
+
+Os dois precisam rodar ao mesmo tempo (terminais separados). Veja `backend/README.md` e `frontend/README.md` para detalhes.

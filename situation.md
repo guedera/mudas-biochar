@@ -9,6 +9,7 @@
 - Stack para custo zero definida em linhas gerais (ver "Decisões" abaixo).
 - Backend FastAPI escafoldado em `backend/` (projeto Python movido da raiz): modelo/tabela `medicoes`, validação com Pydantic (enums de espécie/tratamento/injúria, arredondamento de altura/diâmetro), endpoints `POST /medicoes` e `GET /medicoes` (com filtro por bloco+espécie+tratamento = histórico de uma planta), testes automatizados (`uv run pytest`, 5 passando) e testado manualmente rodando o servidor local.
 - Frontend React + Vite escafoldado em `frontend/`, com as 3 rotas (Cadastro, Relatório, Dashboard — as duas últimas ainda placeholder) e a **página de Cadastro completa**: todos os campos do domínio, botões toggle (folhas/sobrevivência/daninha), seleção múltipla de injúria, data preenchida automaticamente, e salvamento via `POST /medicoes` com validação e feedback de sucesso/erro. Testado ponta a ponta num browser real (Playwright): cadastro salva, valida no banco via API, formulário reseta, sem erros de console.
+- Ajustes de UX/UI na página de Cadastro, pensando em uso principalmente em celular/tablet na vertical: layout em grid fixo de 2 colunas (Bloco+Espécie / Tratamento+Altura / Diâmetro 1+2), texto "(caule quadrado)" removido do Diâmetro 2, e os 3 botões toggle (Folhas/Viva/Daninha) sempre numa única linha (grid de 3 colunas fixas em vez de flex-wrap). Validado com screenshots em viewport de celular (390px) e tablet (768px) retrato.
 
 ## Decisões
 

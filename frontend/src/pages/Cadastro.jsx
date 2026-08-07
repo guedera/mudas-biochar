@@ -158,7 +158,7 @@ export default function Cadastro() {
         </label>
 
         <label>
-          Diâmetro 2 (mm) <span className="hint">caule quadrado</span>
+          Diâmetro 2 (mm)
           <input
             type="text"
             inputMode="decimal"

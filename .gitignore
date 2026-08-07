@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node / frontend
+node_modules/
+dist/
+build/
+.vite/
+.turbo/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Deploy platforms
+.vercel/
+.netlify/
+
+# Dados originais (planilha de pesquisa) e exports gerados
+data/*.xls
+data/*.xlsx
+data/*.csv
+backend/exports/
+
+# Logs
+*.log
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

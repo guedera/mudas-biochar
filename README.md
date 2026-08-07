@@ -1,1 +1,43 @@
 # mudas-biochar
+
+Webapp para digitalizar as medições de uma pesquisa de biologia (mudas/biochar), substituindo o registro em papel/planilha por um cadastro direto em banco de dados, com geração de relatórios filtrados e um dashboard.
+
+## Domínio: o que é uma medição
+
+Cada medição registrada tem os campos abaixo, nesta ordem:
+
+| Campo | Tipo | Observações |
+|---|---|---|
+| Bloco | inteiro | identifica o bloco da planta |
+| Espécie | enum | `CF, CV, CS, ED, ES, MB, MC, MF, MH, MG, JP, ST, SG` |
+| Tratamento | enum | `T0` a `T9` |
+| Altura | float (1 casa decimal), opcional | cm, ex. `11.9`; pode ser `NA` |
+| Diâmetro | float (2 casas decimais), opcional | mm, ex. `1.96`; pode ser `NA` |
+| Folhas | binário | 1 = tem folhas, 0 = não tem |
+| Sobrevivência | binário | 1 = viva, 0 = morta |
+| Daninha | binário | 1 = tem daninha, 0 = não tem |
+| Injúria | enum (múltipla escolha), opcional | `AA, APC, FS, FM, H, P` — uma medição pode ter mais de uma ou nenhuma |
+| Observação | texto | opcional |
+| Data da medição | datetime | preenchida automaticamente |
+
+## Páginas planejadas
+
+1. **Cadastro** (principal) — formulário para lançar uma medição rapidamente em campo/laboratório.
+2. **Relatório** — filtros (bloco, espécie, tratamento, etc.) e exportação em CSV/XLS.
+3. **Dashboard** — visão geral dos dados (detalhes a definir).
+
+Há também uma planilha com medições já coletadas anteriormente, que precisa ser importada para o banco na primeira carga (ver `data/`).
+
+## Estrutura do repositório
+
+```
+frontend/   interface web (cadastro, relatório, dashboard)
+backend/    API e persistência dos dados
+data/       planilha(s) originais e scripts de importação
+```
+
+A stack ainda será definida — por ora o projeto roda e é testado localmente. Um requisito de projeto é **custo zero de hospedagem/infra**; isso vai orientar as escolhas de stack e de onde o site fica hospedado.
+
+## Rodando localmente
+
+TBD — será documentado assim que a stack for escolhida.

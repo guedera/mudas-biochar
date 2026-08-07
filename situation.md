@@ -13,7 +13,8 @@
 - Requisito: hospedagem/infra com custo zero.
 - Altura e Diâmetro são opcionais (podem ser `NA`); Injúria é opcional (uma medição pode não ter nenhuma).
 - Diâmetro virou dois campos, Diâmetro 1 e Diâmetro 2 (caule quadrado tem os dois preenchidos; caule normal/redondo deixa Diâmetro 2 como `NA`).
-- Uma mesma planta (Bloco + Espécie + Tratamento) é medida várias vezes ao longo do tempo — o banco precisa guardar histórico de medições por planta, não um registro único por planta. **Assumindo que Bloco + Espécie + Tratamento identifica uma planta específica de forma única** — confirmar antes de fechar o schema.
+- Confirmado: Bloco + Espécie + Tratamento identifica uma planta de forma única. Data é o que diferencia cada medição repetida dessa mesma planta ao longo do tempo.
+- Schema: tabela única `medicoes` (sem tabela separada de "plantas") — cada linha é um evento de medição com `bloco`, `especie`, `tratamento`, `data` e os demais campos. Histórico de uma planta = `WHERE bloco/especie/tratamento = ... ORDER BY data`. Injúria fica como array nativo do Postgres (`text[]`) na própria linha, em vez de tabela separada.
 - Stack proposta:
   - **Frontend**: site estático (React/Vite ou HTML puro) no Vercel/Netlify/Cloudflare Pages.
   - **Banco**: Postgres gerenciado no Supabase (free tier), para não depender de disco persistente.
@@ -22,8 +23,7 @@
 ## Falta fazer
 
 - Confirmar a stack definitiva (frontend, backend/API, banco) e decidir entre backend custom (FastAPI) vs. API automática do Supabase.
-- Confirmar se Bloco + Espécie + Tratamento identifica a planta de forma única (ou se precisa de um identificador explícito de planta).
-- Desenhar o schema do banco de dados (tabela de medições com os campos atuais, permitindo múltiplas medições por planta ao longo do tempo).
+- Criar de fato a tabela `medicoes` no banco escolhido, seguindo o schema decidido acima.
 - Implementar a página de cadastro (formulário principal).
 - Implementar a página de relatório (filtros + export CSV/XLS).
 - Definir e implementar o dashboard (escopo ainda em aberto).

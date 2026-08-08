@@ -25,7 +25,9 @@ Cada medição registrada tem os campos abaixo, nesta ordem:
 
 1. **Cadastro** (principal) — formulário para lançar uma medição rapidamente em campo/laboratório. Layout pensado primeiro para celular/tablet na vertical, já que é onde o formulário será usado na prática.
 2. **Relatório** — duas seções: **Dados** (filtros opcionais e combináveis — bloco, tratamento, espécie, folhas, sobrevivência, daninha, presença de injúria — e download em CSV) e **Diferenças** (comparar medições de uma mesma planta ao longo do tempo; ainda a definir).
-3. **Dashboard** — visão geral dos dados (detalhes a definir).
+3. **Dashboard** — visão geral dos dados, em duas partes:
+   - **Estado atual** (baseado na medição mais recente de cada planta — se ela morreu, conta como morta mesmo com medições anteriores vivas): % de mortalidade por tratamento, contagem de injúrias, e diâmetro médio por tratamento para uma espécie escolhida.
+   - **Evolução ao longo do tempo** (usa todas as medições, agrupadas por mês): altura média, diâmetro médio e % de mortalidade acumulada por tratamento, e a taxa de mortalidade de cada tipo de injúria comparada à taxa geral.
 
 Há também uma planilha com medições já coletadas anteriormente, que precisa ser importada para o banco na primeira carga (ver `data/`).
 

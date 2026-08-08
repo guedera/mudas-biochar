@@ -34,3 +34,42 @@ class MedicaoRead(MedicaoCreate):
 
     id: int
     data_medicao: datetime
+
+
+class ResumoDashboard(BaseModel):
+    total_plantas: int
+    total_mortas: int
+    total_vivas: int
+    percentual_mortas: float
+
+
+class MortalidadePorTratamento(BaseModel):
+    tratamento: Tratamento
+    mortas: int
+    percentual: float
+
+
+class ContagemInjuria(BaseModel):
+    injuria: Injuria
+    contagem: int
+
+
+class DiametroPorTratamento(BaseModel):
+    tratamento: Tratamento
+    diametro_medio: float
+    n: int
+
+
+class PontoEvolucaoTratamento(BaseModel):
+    tratamento: Tratamento
+    periodo: str
+    altura_media: float | None
+    diametro_medio: float | None
+    percentual_mortas_acumulado: float
+
+
+class InjuriaVsSobrevivencia(BaseModel):
+    injuria: Injuria
+    n: int
+    taxa_mortalidade: float
+    delta: float

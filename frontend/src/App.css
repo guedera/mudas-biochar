@@ -183,3 +183,317 @@
   font-weight: 600;
   text-decoration: underline;
 }
+
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-muted);
+}
+
+.stat-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.stat-valor {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.stat-tile-danger .stat-valor {
+  color: var(--danger);
+}
+
+.chart {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chart h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.chart-vazio {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.chart-filtro {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  font-size: 0.85rem;
+}
+
+.chart-filtro select {
+  width: auto;
+}
+
+.chart-plot {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 200px;
+  padding: 12px 8px 0;
+  border-bottom: 1px solid var(--border);
+  background-image: repeating-linear-gradient(
+    to top,
+    var(--border) 0,
+    var(--border) 1px,
+    transparent 1px,
+    transparent 25%
+  );
+  background-repeat: no-repeat;
+  overflow-x: auto;
+}
+
+.chart-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1 0 32px;
+  height: 100%;
+}
+
+.chart-bar-track {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.chart-bar {
+  position: relative;
+  width: 100%;
+  max-width: 24px;
+  min-height: 2px;
+  background: var(--accent);
+  border-radius: 4px 4px 0 0;
+}
+
+.chart-bar:hover,
+.chart-bar:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.chart-bar:hover::after,
+.chart-bar:focus-visible::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  z-index: 1;
+}
+
+.chart-bar-valor {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.chart-bar-rotulo {
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.chart-tabela summary {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.chart-tabela table {
+  margin-top: 8px;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.chart-tabela th,
+.chart-tabela td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.dashboard-secao {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dashboard-secao h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.linechart {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.linechart-grid {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.linechart-contexto {
+  fill: none;
+  stroke: var(--text-muted);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  opacity: 0.35;
+}
+
+.linechart-destaque {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.linechart-ponto {
+  fill: var(--accent);
+  stroke: var(--bg);
+  stroke-width: 2;
+}
+
+.linechart-ponto:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.linechart-rotulo {
+  fill: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.linechart-eixo-x {
+  fill: var(--text-muted);
+  font-size: 10px;
+}
+
+.diverging {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.diverging-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.diverging-rotulo {
+  flex: 0 0 40px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.diverging-track {
+  position: relative;
+  flex: 1;
+  height: 24px;
+}
+
+.diverging-zero {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--border);
+}
+
+.diverging-bar {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+}
+
+.diverging-positivo {
+  border-radius: 0 4px 4px 0;
+  background: var(--danger);
+}
+
+.diverging-negativo {
+  border-radius: 4px 0 0 4px;
+  background: var(--success);
+}
+
+.diverging-bar:hover,
+.diverging-bar:focus-visible {
+  outline: 2px solid var(--text-muted);
+  outline-offset: 1px;
+}
+
+.diverging-bar:hover::after,
+.diverging-bar:focus-visible::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  z-index: 1;
+}
+
+.diverging-valor {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}

@@ -86,9 +86,13 @@
 }
 
 .injurias legend {
-  padding: 0 6px;
+  padding: 3px 8px;
+  border-radius: 6px;
   font-size: 0.85rem;
-  color: var(--text-muted);
+  font-style: italic;
+  font-weight: 700;
+  color: #fff;
+  background: var(--accent);
 }
 
 .chip {
@@ -133,4 +137,49 @@
 .feedback.error {
   background: var(--danger-bg);
   color: var(--danger);
+}
+
+.relatorio {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.relatorio-secao {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.relatorio-secao h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.secao-descricao {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.filtros-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.grupo-acoes {
+  flex-basis: 100%;
+  display: flex;
+  gap: 16px;
+}
+
+.marcar-todos {
+  padding: 2px 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: underline;
 }

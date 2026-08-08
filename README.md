@@ -17,14 +17,14 @@ Cada medição registrada tem os campos abaixo, nesta ordem:
 | Folhas | binário | 1 = tem folhas, 0 = não tem |
 | Sobrevivência | binário | 1 = viva, 0 = morta |
 | Daninha | binário | 1 = tem daninha, 0 = não tem |
-| Injúria | enum (múltipla escolha), opcional | `AA, APC, FS, FM, H, P` — uma medição pode ter mais de uma ou nenhuma |
+| Injúria | enum (múltipla escolha), opcional | `A, AA, APC, FS, FM, H, P` — uma medição pode ter mais de uma ou nenhuma |
 | Observação | texto | opcional |
 | Data da medição | datetime | preenchida automaticamente |
 
 ## Páginas planejadas
 
 1. **Cadastro** (principal) — formulário para lançar uma medição rapidamente em campo/laboratório. Layout pensado primeiro para celular/tablet na vertical, já que é onde o formulário será usado na prática.
-2. **Relatório** — filtros (bloco, espécie, tratamento, etc.) e exportação em CSV/XLS.
+2. **Relatório** — duas seções: **Dados** (filtros opcionais e combináveis — bloco, tratamento, espécie, folhas, sobrevivência, daninha, presença de injúria — e download em CSV) e **Diferenças** (comparar medições de uma mesma planta ao longo do tempo; ainda a definir).
 3. **Dashboard** — visão geral dos dados (detalhes a definir).
 
 Há também uma planilha com medições já coletadas anteriormente, que precisa ser importada para o banco na primeira carga (ver `data/`).

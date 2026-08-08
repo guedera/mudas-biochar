@@ -23,3 +23,5 @@ uv run pytest
 - `GET /health`
 - `POST /medicoes` — cria uma medição.
 - `GET /medicoes?bloco=&especie=&tratamento=` — lista medições (mais recentes primeiro); filtrar pelos três campos juntos retorna o histórico de uma planta específica ao longo do tempo.
+- `GET /medicoes/blocos` — lista os números de bloco distintos já cadastrados.
+- `GET /medicoes/export?...` — baixa um CSV das medições. Todos os filtros são opcionais: `blocos` (repetível, ex. `blocos=5&blocos=10`), `especies` (repetível), `tratamentos` (repetível), `injurias` (repetível), `sem_injuria` (medições sem nenhuma injúria), `tem_folhas`, `viva`, `tem_daninha`. `injurias` e `sem_injuria` se combinam por OR: uma medição entra se tiver pelo menos uma das injúrias marcadas, ou se `sem_injuria=true` e ela não tiver nenhuma.

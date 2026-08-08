@@ -31,6 +31,7 @@ class Tratamento(str, Enum):
 
 
 class Injuria(str, Enum):
+    A = "A"
     AA = "AA"
     APC = "APC"
     FS = "FS"

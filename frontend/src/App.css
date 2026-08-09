@@ -372,6 +372,60 @@
   text-align: left;
 }
 
+.donut-wrap {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.donut {
+  width: 160px;
+  height: 160px;
+  flex-shrink: 0;
+}
+
+.donut circle {
+  transition: opacity 0.15s;
+}
+
+.donut circle:hover,
+.donut circle:focus-visible {
+  opacity: 0.8;
+  outline: none;
+}
+
+.donut-total {
+  fill: var(--text);
+  font-size: 28px;
+  font-weight: 700;
+  dominant-baseline: middle;
+}
+
+.donut-legenda {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.donut-legenda li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.donut-legenda-cor {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
 .dashboard-secao {
   display: flex;
   flex-direction: column;

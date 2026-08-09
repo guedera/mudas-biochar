@@ -10,10 +10,17 @@ import {
   getMortalidadePorTratamento,
   getResumoDashboard,
 } from '../api'
-import { ESPECIES, TRATAMENTOS } from '../constants'
+import { ESPECIES, INJURIAS, TRATAMENTOS } from '../constants'
 import BarChart from '../components/BarChart'
 import LineChart from '../components/LineChart'
+import DonutChart from '../components/DonutChart'
 import DivergingBarChart from '../components/DivergingBarChart'
+
+// Cor fixa por tipo de injúria (pela identidade do código, nunca pela
+// posição/contagem dele nos dados) — mesma injúria sempre com a mesma cor.
+const CORES_INJURIA = Object.fromEntries(
+  INJURIAS.map((codigo, i) => [codigo, `var(--series-${i + 1})`]),
+)
 
 function formatarPercentual(valor) {
   return `${valor}%`
@@ -152,6 +159,17 @@ export default function Dashboard() {
           dados={injurias.map((i) => ({ rotulo: i.injuria, valor: i.contagem }))}
         />
 
+        <DonutChart
+          titulo="Distribuição das injúrias (% das ocorrências)"
+          colunaRotulo="Injúria"
+          colunaValor="% das ocorrências"
+          dados={injurias.map((i) => ({
+            rotulo: i.injuria,
+            valor: i.contagem,
+            cor: CORES_INJURIA[i.injuria],
+          }))}
+        />
+
         <BarChart
           titulo={`Diâmetro médio por tratamento — ${especie}`}
           colunaRotulo="Tratamento"
@@ -174,7 +192,7 @@ export default function Dashboard() {
       </section>
 
       <section className="dashboard-secao">
-        <h2>Evolução ao longo do tempo</h2>
+        <h2>Evolução ao longo do tempo - por tratamento</h2>
         <p className="secao-descricao">
           Cada gráfico destaca o tratamento escolhido (linha verde) contra os demais (cinza), mês
           a mês, considerando todas as medições — não só a mais recente.

@@ -1,5 +1,5 @@
 export const ESPECIES = [
-  'CF', 'CV', 'CS', 'ED', 'ES', 'MB', 'MC', 'MF', 'MH', 'MG', 'JP', 'ST', 'SG',
+  'CF', 'CS', 'CV', 'ED', 'ES', 'JP', 'MB', 'MC', 'MF', 'MG', 'MH', 'SG', 'ST',
 ]
 
 export const TRATAMENTOS = [

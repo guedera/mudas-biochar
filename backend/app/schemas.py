@@ -134,6 +134,12 @@ class MortalidadePorTratamento(BaseModel):
     percentual: float
 
 
+class MortalidadePorBloco(BaseModel):
+    bloco: int
+    mortas: int
+    percentual: float
+
+
 class ContagemInjuria(BaseModel):
     injuria: Injuria
     contagem: int
@@ -147,6 +153,14 @@ class DiametroPorTratamento(BaseModel):
 
 class PontoEvolucaoTratamento(BaseModel):
     tratamento: Tratamento
+    periodo: str
+    altura_media: float | None
+    diametro_medio: float | None
+    percentual_mortas_acumulado: float
+
+
+class PontoEvolucaoBloco(BaseModel):
+    bloco: int
     periodo: str
     altura_media: float | None
     diametro_medio: float | None

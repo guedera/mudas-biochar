@@ -178,6 +178,75 @@ def test_evolucao_mortalidade_acumulada_nao_reverte(client: TestClient, db_sessi
     assert pontos["2026-03"]["percentual_mortas_acumulado"] == 100.0
 
 
+def test_mortalidade_por_bloco_usa_ultima_medicao_por_planta(client: TestClient):
+    # bloco 1: planta viva -> depois morta = conta morta no bloco 1
+    client.post("/medicoes", json=_payload(bloco=1, especie="MB", tratamento="T1", viva=True))
+    client.post("/medicoes", json=_payload(bloco=1, especie="MB", tratamento="T1", viva=False))
+    # bloco 2: duas plantas mortas
+    client.post("/medicoes", json=_payload(bloco=2, especie="MB", tratamento="T1", viva=False))
+    client.post("/medicoes", json=_payload(bloco=2, especie="CF", tratamento="T2", viva=False))
+    # bloco 3: viva o tempo todo, não deve aparecer
+    client.post("/medicoes", json=_payload(bloco=3, viva=True))
+
+    response = client.get("/dashboard/mortalidade-por-bloco")
+    assert response.status_code == 200
+    body = {row["bloco"]: row for row in response.json()}
+
+    assert body[1]["mortas"] == 1
+    assert body[1]["percentual"] == round(1 / 3 * 100, 1)
+    assert body[2]["mortas"] == 2
+    assert body[2]["percentual"] == round(2 / 3 * 100, 1)
+    assert 3 not in body
+
+
+def test_evolucao_por_bloco_calcula_media_por_periodo_e_mortalidade_acumulada(
+    client: TestClient, db_session: Session
+):
+    janeiro = datetime(2026, 1, 15, tzinfo=timezone.utc)
+    fevereiro = datetime(2026, 2, 15, tzinfo=timezone.utc)
+
+    # bloco 1: planta 1 (jan viva altura 5.0, fev viva altura 7.0)
+    _medicao_em(db_session, janeiro, bloco=1, especie="MB", tratamento="T1", altura=5.0, viva=True)
+    _medicao_em(
+        db_session, fevereiro, bloco=1, especie="MB", tratamento="T1", altura=7.0, viva=True
+    )
+    # bloco 1: planta 2 (jan viva altura 9.0, fev morta em fevereiro)
+    _medicao_em(db_session, janeiro, bloco=1, especie="CF", tratamento="T2", altura=9.0, viva=True)
+    _medicao_em(
+        db_session, fevereiro, bloco=1, especie="CF", tratamento="T2", altura=9.5, viva=False
+    )
+
+    response = client.get("/dashboard/evolucao-por-bloco")
+    assert response.status_code == 200
+    pontos = {(row["bloco"], row["periodo"]): row for row in response.json()}
+
+    jan = pontos[(1, "2026-01")]
+    fev = pontos[(1, "2026-02")]
+
+    assert jan["altura_media"] == 7.0  # media(5.0, 9.0)
+    assert jan["percentual_mortas_acumulado"] == 0.0
+    assert fev["percentual_mortas_acumulado"] == 50.0  # 1 de 2 plantas do bloco morreu
+
+
+def test_evolucao_por_bloco_mortalidade_acumulada_nao_reverte(
+    client: TestClient, db_session: Session
+):
+    janeiro = datetime(2026, 1, 15, tzinfo=timezone.utc)
+    fevereiro = datetime(2026, 2, 15, tzinfo=timezone.utc)
+    marco = datetime(2026, 3, 15, tzinfo=timezone.utc)
+
+    _medicao_em(db_session, janeiro, bloco=5, viva=True)
+    _medicao_em(db_session, fevereiro, bloco=5, viva=False)
+    _medicao_em(db_session, marco, bloco=5, viva=False)
+
+    response = client.get("/dashboard/evolucao-por-bloco")
+    pontos = {row["periodo"]: row for row in response.json() if row["bloco"] == 5}
+
+    assert pontos["2026-01"]["percentual_mortas_acumulado"] == 0.0
+    assert pontos["2026-02"]["percentual_mortas_acumulado"] == 100.0
+    assert pontos["2026-03"]["percentual_mortas_acumulado"] == 100.0
+
+
 def test_injuria_vs_sobrevivencia_calcula_delta_em_relacao_a_taxa_geral(client: TestClient):
     # taxa geral: 2 de 4 mortas = 50%
     client.post("/medicoes", json=_payload(bloco=1, viva=True, injurias=["H"]))

@@ -54,6 +54,10 @@ export function getMortalidadePorTratamento() {
   return getJson('/dashboard/mortalidade-por-tratamento')
 }
 
+export function getMortalidadePorBloco() {
+  return getJson('/dashboard/mortalidade-por-bloco')
+}
+
 export function getInjurias() {
   return getJson('/dashboard/injurias')
 }
@@ -64,6 +68,14 @@ export function getDiametroPorTratamento(especie) {
 
 export function getEvolucao() {
   return getJson('/dashboard/evolucao')
+}
+
+export function getEvolucaoPorBloco() {
+  return getJson('/dashboard/evolucao-por-bloco')
+}
+
+export function getBlocos() {
+  return getJson('/medicoes/blocos')
 }
 
 export function getInjuriaVsSobrevivencia() {

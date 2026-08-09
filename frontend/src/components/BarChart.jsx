@@ -9,10 +9,13 @@ export default function BarChart({
   dados,
   formatarValor = formatarPadrao,
   extra = null,
+  cor,
 }) {
+  const estiloCor = cor ? { '--cor-grafico': cor } : undefined
+
   if (dados.length === 0) {
     return (
-      <div className="chart">
+      <div className="chart" style={estiloCor}>
         <h3>{titulo}</h3>
         {extra}
         <p className="chart-vazio">Sem dados suficientes ainda.</p>
@@ -23,7 +26,7 @@ export default function BarChart({
   const max = Math.max(...dados.map((d) => d.valor), 1)
 
   return (
-    <div className="chart">
+    <div className="chart" style={estiloCor}>
       <h3>{titulo}</h3>
       {extra}
       <div className="chart-plot">

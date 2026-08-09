@@ -4,6 +4,10 @@
   padding: 16px;
 }
 
+.app-header {
+  text-align: center;
+}
+
 .app-header h1 {
   font-size: 1.4rem;
   margin: 0 0 12px;
@@ -11,16 +15,20 @@
 
 .app-header nav {
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px;
   margin-bottom: 24px;
   border-bottom: 1px solid var(--border);
 }
 
 .app-header nav a {
-  padding: 8px 12px;
+  padding: 8px 6px;
   text-decoration: none;
   color: var(--text-muted);
   border-bottom: 2px solid transparent;
+  font-size: 0.85rem;
+  white-space: nowrap;
 }
 
 .app-header nav a.active {
@@ -45,6 +53,16 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 14px;
+}
+
+.field-grid label {
+  align-items: center;
+}
+
+.field-grid input,
+.field-grid select {
+  width: 100%;
+  max-width: 130px;
 }
 
 .toggles {
@@ -292,13 +310,13 @@
   width: 100%;
   max-width: 24px;
   min-height: 2px;
-  background: var(--accent);
+  background: var(--cor-grafico, var(--accent));
   border-radius: 4px 4px 0 0;
 }
 
 .chart-bar:hover,
 .chart-bar:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--cor-grafico, var(--accent));
   outline-offset: 1px;
 }
 
@@ -387,20 +405,20 @@
 
 .linechart-destaque {
   fill: none;
-  stroke: var(--accent);
+  stroke: var(--cor-grafico, var(--accent));
   stroke-width: 2;
   stroke-linejoin: round;
   stroke-linecap: round;
 }
 
 .linechart-ponto {
-  fill: var(--accent);
+  fill: var(--cor-grafico, var(--accent));
   stroke: var(--bg);
   stroke-width: 2;
 }
 
 .linechart-ponto:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--cor-grafico, var(--accent));
   outline-offset: 2px;
 }
 
@@ -510,7 +528,8 @@
   gap: 12px;
 }
 
-.sessao-criar-form label {
+.sessao-criar-form label,
+.sessao-criar-form button {
   flex: 1;
 }
 

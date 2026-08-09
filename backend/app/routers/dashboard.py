@@ -10,7 +10,9 @@ from app.schemas import (
     ContagemInjuria,
     DiametroPorTratamento,
     InjuriaVsSobrevivencia,
+    MortalidadePorBloco,
     MortalidadePorTratamento,
+    PontoEvolucaoBloco,
     PontoEvolucaoTratamento,
     ResumoDashboard,
 )
@@ -78,6 +80,23 @@ def mortalidade_por_tratamento(db: Session = Depends(get_db)) -> list[Mortalidad
         )
         for tratamento in Tratamento
         if contagem[tratamento.value] > 0
+    ]
+
+
+@router.get("/mortalidade-por-bloco", response_model=list[MortalidadePorBloco])
+def mortalidade_por_bloco(db: Session = Depends(get_db)) -> list[MortalidadePorBloco]:
+    """De todas as plantas mortas (pelo estado da medição mais recente de
+    cada uma), qual o % de cada bloco."""
+    mortas = [m for m in _medicoes_atuais(db) if not m.viva]
+    total = len(mortas)
+    contagem = Counter(m.bloco for m in mortas)
+    return [
+        MortalidadePorBloco(
+            bloco=bloco,
+            mortas=qtd,
+            percentual=round(qtd / total * 100, 1) if total else 0.0,
+        )
+        for bloco, qtd in sorted(contagem.items())
     ]
 
 
@@ -166,6 +185,50 @@ def evolucao(db: Session = Depends(get_db)) -> list[PontoEvolucaoTratamento]:
             resultado.append(
                 PontoEvolucaoTratamento(
                     tratamento=tratamento,
+                    periodo=periodo,
+                    altura_media=round(sum(alturas) / len(alturas), 1) if alturas else None,
+                    diametro_medio=round(sum(diametros) / len(diametros), 2)
+                    if diametros
+                    else None,
+                    percentual_mortas_acumulado=round(mortas_ate_aqui / total_plantas * 100, 1),
+                )
+            )
+    return resultado
+
+
+@router.get("/evolucao-por-bloco", response_model=list[PontoEvolucaoBloco])
+def evolucao_por_bloco(db: Session = Depends(get_db)) -> list[PontoEvolucaoBloco]:
+    """Igual a `/evolucao`, mas agrupado por bloco em vez de tratamento."""
+    todas = db.query(Medicao).order_by(Medicao.data_medicao).all()
+    if not todas:
+        return []
+
+    periodos = sorted({_periodo(m) for m in todas})
+    plantas_do_bloco: dict[int, set[tuple[int, str, str]]] = defaultdict(set)
+    primeira_morte: dict[tuple[int, str, str], str] = {}
+    medicoes_do_periodo: dict[tuple[int, str], list[Medicao]] = defaultdict(list)
+
+    for medicao in todas:
+        chave = (medicao.bloco, medicao.especie, medicao.tratamento)
+        plantas_do_bloco[medicao.bloco].add(chave)
+        medicoes_do_periodo[(medicao.bloco, _periodo(medicao))].append(medicao)
+        if not medicao.viva and chave not in primeira_morte:
+            primeira_morte[chave] = _periodo(medicao)
+
+    resultado = []
+    for bloco in sorted(plantas_do_bloco):
+        chaves = plantas_do_bloco[bloco]
+        total_plantas = len(chaves)
+        for periodo in periodos:
+            do_mes = medicoes_do_periodo.get((bloco, periodo), [])
+            alturas = [m.altura for m in do_mes if m.altura is not None]
+            diametros = [v for m in do_mes if (v := _diametro_efetivo(m)) is not None]
+            mortas_ate_aqui = sum(
+                1 for chave in chaves if primeira_morte.get(chave, _NUNCA_MORREU) <= periodo
+            )
+            resultado.append(
+                PontoEvolucaoBloco(
+                    bloco=bloco,
                     periodo=periodo,
                     altura_media=round(sum(alturas) / len(alturas), 1) if alturas else None,
                     diametro_medio=round(sum(diametros) / len(diametros), 2)

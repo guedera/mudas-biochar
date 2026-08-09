@@ -27,15 +27,18 @@ export default function LineChart({
   destaque,
   formatarValor = (v) => String(v),
   colunaValor = 'Valor',
+  colunaSerie = 'Tratamento',
   maximoEixoY,
   extra = null,
+  cor,
 }) {
+  const estiloCor = cor ? { '--cor-grafico': cor } : undefined
   const periodos = [...new Set(dados.map((d) => d[campoPeriodo]))].sort()
   const porSerie = agruparPorSerie(dados, campoSerie, campoPeriodo, campoValor)
 
   if (periodos.length === 0 || porSerie.size === 0) {
     return (
-      <div className="chart">
+      <div className="chart" style={estiloCor}>
         <h3>{titulo}</h3>
         {extra}
         <p className="chart-vazio">Sem dados suficientes ainda.</p>
@@ -71,7 +74,7 @@ export default function LineChart({
   const ultimoPontoDestaque = pontosDestaqueValidos[pontosDestaqueValidos.length - 1]
 
   return (
-    <div className="chart">
+    <div className="chart" style={estiloCor}>
       <h3>{titulo}</h3>
       {extra}
       <svg
@@ -141,7 +144,7 @@ export default function LineChart({
         <table>
           <thead>
             <tr>
-              <th>Tratamento</th>
+              <th>{colunaSerie}</th>
               <th>Período</th>
               <th>{colunaValor}</th>
             </tr>

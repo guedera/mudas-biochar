@@ -10,6 +10,7 @@
   --danger-bg: #ffebe9;
   --success: #1a7f37;
   --success-bg: #dafbe1;
+  --info: #2a78d6;
 
   color-scheme: light dark;
   font: 16px/1.5 system-ui, 'Segoe UI', Roboto, sans-serif;
@@ -30,6 +31,7 @@
     --danger-bg: #3d1418;
     --success: #3fb950;
     --success-bg: #0f2c1a;
+    --info: #3987e5;
   }
 }
 

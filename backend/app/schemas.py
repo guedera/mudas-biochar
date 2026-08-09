@@ -5,6 +5,14 @@ from pydantic import BaseModel, ConfigDict, field_validator
 from app.enums import Especie, Injuria, Tratamento
 
 
+def _round_altura(v: float | None) -> float | None:
+    return v if v is None else round(v, 1)
+
+
+def _round_diametro(v: float | None) -> float | None:
+    return v if v is None else round(v, 2)
+
+
 class MedicaoCreate(BaseModel):
     bloco: int
     especie: Especie
@@ -20,13 +28,13 @@ class MedicaoCreate(BaseModel):
 
     @field_validator("altura")
     @classmethod
-    def _round_altura(cls, v: float | None) -> float | None:
-        return v if v is None else round(v, 1)
+    def _valida_altura(cls, v: float | None) -> float | None:
+        return _round_altura(v)
 
     @field_validator("diametro1", "diametro2")
     @classmethod
-    def _round_diametro(cls, v: float | None) -> float | None:
-        return v if v is None else round(v, 2)
+    def _valida_diametro(cls, v: float | None) -> float | None:
+        return _round_diametro(v)
 
 
 class MedicaoRead(MedicaoCreate):
@@ -34,6 +42,83 @@ class MedicaoRead(MedicaoCreate):
 
     id: int
     data_medicao: datetime
+
+
+class SessaoCreate(BaseModel):
+    bloco: int
+
+
+class SessaoRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    bloco: int
+    criada_em: datetime
+    finalizada_em: datetime | None
+    total_plantas: int
+    total_completas: int
+
+
+class SessaoPlantaCreate(BaseModel):
+    especie: Especie
+    tratamento: Tratamento
+    altura: float | None = None
+    tem_folhas: bool
+    viva: bool
+    tem_daninha: bool
+    injurias: list[Injuria] = []
+    observacao: str | None = None
+
+    @field_validator("altura")
+    @classmethod
+    def _valida_altura(cls, v: float | None) -> float | None:
+        return _round_altura(v)
+
+
+class SessaoPlantaUpdate(BaseModel):
+    especie: Especie | None = None
+    tratamento: Tratamento | None = None
+    altura: float | None = None
+    diametro1: float | None = None
+    diametro2: float | None = None
+    tem_folhas: bool | None = None
+    viva: bool | None = None
+    tem_daninha: bool | None = None
+    injurias: list[Injuria] | None = None
+    observacao: str | None = None
+
+    @field_validator("altura")
+    @classmethod
+    def _valida_altura(cls, v: float | None) -> float | None:
+        return _round_altura(v)
+
+    @field_validator("diametro1", "diametro2")
+    @classmethod
+    def _valida_diametro(cls, v: float | None) -> float | None:
+        return _round_diametro(v)
+
+
+class SessaoPlantaRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    especie: Especie
+    tratamento: Tratamento
+    altura: float | None
+    diametro1: float | None
+    diametro2: float | None
+    tem_folhas: bool
+    viva: bool
+    tem_daninha: bool
+    injurias: list[Injuria]
+    observacao: str | None
+    criada_em: datetime
+    diametro_preenchido_em: datetime | None
+    completa: bool
+
+
+class SessaoDetalhe(SessaoRead):
+    plantas: list[SessaoPlantaRead]
 
 
 class ResumoDashboard(BaseModel):

@@ -2,25 +2,20 @@ import { useState } from 'react'
 import { createMedicao } from '../api'
 import { ESPECIES, TRATAMENTOS, INJURIAS } from '../constants'
 import ToggleButton from '../components/ToggleButton'
+import DecimalInput from '../components/DecimalInput'
 
 const initialForm = {
   bloco: '',
   especie: '',
   tratamento: '',
-  altura: '',
-  diametro1: '',
-  diametro2: '',
+  altura: null,
+  diametro1: null,
+  diametro2: null,
   temFolhas: true,
   viva: true,
   temDaninha: false,
   injurias: [],
   observacao: '',
-}
-
-function parseOptionalFloat(value) {
-  if (value.trim() === '') return null
-  const parsed = Number(value.replace(',', '.'))
-  return Number.isNaN(parsed) ? null : parsed
 }
 
 function validar(form) {
@@ -64,9 +59,9 @@ export default function Cadastro() {
         bloco: Number(form.bloco),
         especie: form.especie,
         tratamento: form.tratamento,
-        altura: parseOptionalFloat(form.altura),
-        diametro1: parseOptionalFloat(form.diametro1),
-        diametro2: parseOptionalFloat(form.diametro2),
+        altura: form.altura,
+        diametro1: form.diametro1,
+        diametro2: form.diametro2,
         tem_folhas: form.temFolhas,
         viva: form.viva,
         tem_daninha: form.temDaninha,
@@ -137,34 +132,24 @@ export default function Cadastro() {
 
         <label>
           Altura (cm)
-          <input
-            type="text"
-            inputMode="decimal"
-            placeholder="NA"
-            value={form.altura}
-            onChange={(e) => setField('altura', e.target.value)}
-          />
+          <DecimalInput casas={1} valor={form.altura} onChange={(v) => setField('altura', v)} />
         </label>
 
         <label>
           Diâmetro 1 (mm)
-          <input
-            type="text"
-            inputMode="decimal"
-            placeholder="NA"
-            value={form.diametro1}
-            onChange={(e) => setField('diametro1', e.target.value)}
+          <DecimalInput
+            casas={2}
+            valor={form.diametro1}
+            onChange={(v) => setField('diametro1', v)}
           />
         </label>
 
         <label>
           Diâmetro 2 (mm)
-          <input
-            type="text"
-            inputMode="decimal"
-            placeholder="NA"
-            value={form.diametro2}
-            onChange={(e) => setField('diametro2', e.target.value)}
+          <DecimalInput
+            casas={2}
+            valor={form.diametro2}
+            onChange={(v) => setField('diametro2', v)}
           />
         </label>
       </div>

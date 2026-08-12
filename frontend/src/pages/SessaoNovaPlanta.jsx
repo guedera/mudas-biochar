@@ -10,6 +10,8 @@ const initialForm = {
   especie: '',
   tratamento: '',
   altura: null,
+  diametro1: null,
+  diametro2: null,
   temFolhas: true,
   viva: true,
   temDaninha: false,
@@ -67,6 +69,8 @@ export default function SessaoNovaPlanta() {
         especie: form.especie,
         tratamento: form.tratamento,
         altura: form.altura,
+        diametro1: form.diametro1,
+        diametro2: form.diametro2,
         tem_folhas: form.temFolhas,
         viva: form.viva,
         tem_daninha: form.temDaninha,
@@ -127,6 +131,24 @@ export default function SessaoNovaPlanta() {
         <label>
           Altura (cm)
           <DecimalInput casas={1} valor={form.altura} onChange={(v) => setField('altura', v)} />
+        </label>
+
+        <label>
+          Diâmetro 1 (mm)
+          <DecimalInput
+            casas={2}
+            valor={form.diametro1}
+            onChange={(v) => setField('diametro1', v)}
+          />
+        </label>
+
+        <label>
+          Diâmetro 2 (mm)
+          <DecimalInput
+            casas={2}
+            valor={form.diametro2}
+            onChange={(v) => setField('diametro2', v)}
+          />
         </label>
       </div>
 

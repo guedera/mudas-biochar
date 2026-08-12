@@ -77,7 +77,9 @@ def delete_sessao(sessao_id: int, db: Session = Depends(get_db)) -> None:
 def add_planta(
     sessao_id: int, payload: SessaoPlantaCreate, db: Session = Depends(get_db)
 ) -> SessaoPlanta:
-    """Lança uma planta na sessão (fase 1, sem diâmetro)."""
+    """Lança uma planta na sessão. Altura e diâmetro já podem ser
+    preenchidos de cara, mas são opcionais: dá pra salvar incompleta e
+    completar depois na revisão."""
     sessao = _get_sessao(sessao_id, db)
     if sessao.finalizada_em is not None:
         raise HTTPException(status_code=409, detail="Sessão já finalizada.")
@@ -93,6 +95,8 @@ def add_planta(
         )
 
     planta = SessaoPlanta(sessao_id=sessao.id, **payload.model_dump())
+    if planta.diametro1 is not None:
+        planta.diametro_preenchido_em = _now_utc()
     db.add(planta)
     db.commit()
     db.refresh(planta)

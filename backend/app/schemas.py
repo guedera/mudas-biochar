@@ -63,6 +63,8 @@ class SessaoPlantaCreate(BaseModel):
     especie: Especie
     tratamento: Tratamento
     altura: float | None = None
+    diametro1: float | None = None
+    diametro2: float | None = None
     tem_folhas: bool
     viva: bool
     tem_daninha: bool
@@ -73,6 +75,11 @@ class SessaoPlantaCreate(BaseModel):
     @classmethod
     def _valida_altura(cls, v: float | None) -> float | None:
         return _round_altura(v)
+
+    @field_validator("diametro1", "diametro2")
+    @classmethod
+    def _valida_diametro(cls, v: float | None) -> float | None:
+        return _round_diametro(v)
 
 
 class SessaoPlantaUpdate(BaseModel):

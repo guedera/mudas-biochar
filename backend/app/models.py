@@ -67,10 +67,11 @@ class Sessao(Base):
 class SessaoPlanta(Base):
     """Rascunho de uma planta dentro de uma sessão.
 
-    Fase 1 (em campo, sem diâmetro): especie, tratamento, altura, folhas,
-    viva, daninha, injuria. Fase 2 (segunda passada): diametro1/diametro2.
-    `criada_em` é o que vira `data_medicao` na `Medicao` definitiva —
-    `diametro_preenchido_em` é só para auditoria.
+    Todos os campos, incluindo diametro1/diametro2, podem ser lançados já na
+    primeira passada em campo, mas são opcionais — dá pra salvar incompleta e
+    completar depois numa segunda passada (revisão). `criada_em` é o que vira
+    `data_medicao` na `Medicao` definitiva — `diametro_preenchido_em` é só
+    para auditoria.
     """
 
     __tablename__ = "sessao_plantas"

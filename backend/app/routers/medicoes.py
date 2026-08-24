@@ -1,4 +1,5 @@
 import io
+from datetime import date, datetime, timedelta
 
 import pandas as pd
 from fastapi import APIRouter, Depends, Query as QueryParam
@@ -102,6 +103,7 @@ def export_medicoes(
     tem_daninha: bool | None = None,
     injurias: list[Injuria] | None = QueryParam(None),
     sem_injuria: bool = False,
+    data: date | None = None,
     db: Session = Depends(get_db),
 ) -> StreamingResponse:
     """Exporta medições filtradas em CSV. Todos os filtros são opcionais —
@@ -109,7 +111,8 @@ def export_medicoes(
     mais de um valor (ex. `?tratamentos=T1&tratamentos=T2`); se `injurias`
     e/ou `sem_injuria=true` forem informados, uma medição entra se tiver
     pelo menos uma das injúrias marcadas OU (se `sem_injuria=true`) não
-    tiver nenhuma — ou seja, dá pra combinar "AA" com "sem nenhuma"."""
+    tiver nenhuma — ou seja, dá pra combinar "AA" com "sem nenhuma". `data`
+    filtra pelo dia de `data_medicao` (armazenada em UTC)."""
     query = _filtrar_estrutural(
         db.query(Medicao),
         tem_folhas=tem_folhas,
@@ -122,6 +125,10 @@ def export_medicoes(
         query = query.filter(Medicao.especie.in_([e.value for e in especies]))
     if tratamentos:
         query = query.filter(Medicao.tratamento.in_([t.value for t in tratamentos]))
+    if data is not None:
+        inicio = datetime.combine(data, datetime.min.time())
+        fim = inicio + timedelta(days=1)
+        query = query.filter(Medicao.data_medicao >= inicio, Medicao.data_medicao < fim)
 
     medicoes = query.order_by(Medicao.data_medicao.desc()).all()
 
@@ -157,8 +164,12 @@ def export_medicoes(
     buffer = io.StringIO()
     df.to_csv(buffer, index=False)
 
+    # BOM UTF-8 na frente: sem ele, o Excel abre o CSV assumindo Latin-1 e
+    # todo acento (ç, ã, é...) vem corrompido.
+    conteudo = chr(0xFEFF) + buffer.getvalue()
+
     return StreamingResponse(
-        iter([buffer.getvalue()]),
+        iter([conteudo]),
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=medicoes.csv"},
     )

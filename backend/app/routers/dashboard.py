@@ -1,4 +1,6 @@
 from collections import Counter, defaultdict
+from collections.abc import Callable
+from datetime import date, datetime, timedelta
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
@@ -7,6 +9,7 @@ from app.database import get_db
 from app.enums import Especie, Injuria, Tratamento
 from app.models import Medicao
 from app.schemas import (
+    AlturaPorTratamento,
     ContagemInjuria,
     DiametroPorTratamento,
     InjuriaVsSobrevivencia,
@@ -114,32 +117,85 @@ def injurias(db: Session = Depends(get_db)) -> list[ContagemInjuria]:
     return sorted(resultado, key=lambda c: c.contagem, reverse=True)
 
 
-@router.get("/diametro-por-tratamento", response_model=list[DiametroPorTratamento])
-def diametro_por_tratamento(
-    especie: Especie, db: Session = Depends(get_db)
-) -> list[DiametroPorTratamento]:
-    """Diâmetro médio (estado atual de cada planta) por tratamento, para
-    uma espécie. Quando a planta tem Diâmetro 1 e 2 (caule quadrado), usa a
-    média dos dois."""
-    diametros: dict[str, list[float]] = {}
-    for medicao in _medicoes_atuais(db):
-        if medicao.especie != especie.value:
-            continue
-        valor = _diametro_efetivo(medicao)
+def _medicoes_para_medias(
+    db: Session, especie: Especie, data_inicio: date | None, data_fim: date | None
+) -> list[Medicao]:
+    """Medições usadas pra calcular médias por tratamento, filtradas por
+    espécie. Sem período, usa o estado atual de cada planta (última
+    medição) — igual ao resto do dashboard. Com `data_inicio` e/ou
+    `data_fim` (extremos inclusivos), usa todas as medições feitas dentro
+    da janela, não só a mais recente de cada planta: a média passa a
+    refletir o que foi medido naquele período."""
+    if data_inicio is None and data_fim is None:
+        return [m for m in _medicoes_atuais(db) if m.especie == especie.value]
+
+    query = db.query(Medicao).filter(Medicao.especie == especie.value)
+    if data_inicio is not None:
+        query = query.filter(Medicao.data_medicao >= datetime.combine(data_inicio, datetime.min.time()))
+    if data_fim is not None:
+        fim = datetime.combine(data_fim, datetime.min.time()) + timedelta(days=1)
+        query = query.filter(Medicao.data_medicao < fim)
+    return query.all()
+
+
+def _agrupar_por_tratamento(
+    medicoes: list[Medicao], valor_de: Callable[[Medicao], float | None]
+) -> dict[str, list[float]]:
+    agrupado: dict[str, list[float]] = {}
+    for medicao in medicoes:
+        valor = valor_de(medicao)
         if valor is None:
             continue
-        diametros.setdefault(medicao.tratamento, []).append(valor)
+        agrupado.setdefault(medicao.tratamento, []).append(valor)
+    return agrupado
 
-    resultado = [
+
+@router.get("/diametro-por-tratamento", response_model=list[DiametroPorTratamento])
+def diametro_por_tratamento(
+    especie: Especie,
+    data_inicio: date | None = None,
+    data_fim: date | None = None,
+    db: Session = Depends(get_db),
+) -> list[DiametroPorTratamento]:
+    """Diâmetro médio por tratamento, para uma espécie — ver
+    `_medicoes_para_medias` pra semântica de `data_inicio`/`data_fim`.
+    Quando a planta tem Diâmetro 1 e 2 (caule quadrado), usa a média dos
+    dois."""
+    agrupado = _agrupar_por_tratamento(
+        _medicoes_para_medias(db, especie, data_inicio, data_fim), _diametro_efetivo
+    )
+    return [
         DiametroPorTratamento(
             tratamento=tratamento,
             diametro_medio=round(sum(valores) / len(valores), 2),
             n=len(valores),
         )
         for tratamento in Tratamento
-        if (valores := diametros.get(tratamento.value))
+        if (valores := agrupado.get(tratamento.value))
     ]
-    return resultado
+
+
+@router.get("/altura-por-tratamento", response_model=list[AlturaPorTratamento])
+def altura_por_tratamento(
+    especie: Especie,
+    data_inicio: date | None = None,
+    data_fim: date | None = None,
+    db: Session = Depends(get_db),
+) -> list[AlturaPorTratamento]:
+    """Altura média por tratamento, para uma espécie — mesma semântica de
+    período que `/diametro-por-tratamento`."""
+    agrupado = _agrupar_por_tratamento(
+        _medicoes_para_medias(db, especie, data_inicio, data_fim), lambda m: m.altura
+    )
+    return [
+        AlturaPorTratamento(
+            tratamento=tratamento,
+            altura_media=round(sum(valores) / len(valores), 1),
+            n=len(valores),
+        )
+        for tratamento in Tratamento
+        if (valores := agrupado.get(tratamento.value))
+    ]
 
 
 def _periodo(medicao: Medicao) -> str:

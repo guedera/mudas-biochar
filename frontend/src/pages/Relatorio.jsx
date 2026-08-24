@@ -14,6 +14,7 @@ const initialFiltros = {
   folhas: 'todos',
   sobrevivencia: 'todos',
   daninha: 'todos',
+  data: '',
 }
 
 function buildParams(filtros) {
@@ -31,6 +32,7 @@ function buildParams(filtros) {
   if (filtros.folhas !== 'todos') params.set('tem_folhas', filtros.folhas === 'com')
   if (filtros.sobrevivencia !== 'todos') params.set('viva', filtros.sobrevivencia === 'viva')
   if (filtros.daninha !== 'todos') params.set('tem_daninha', filtros.daninha === 'com')
+  if (filtros.data) params.set('data', filtros.data)
 
   return params
 }
@@ -123,7 +125,7 @@ export default function Relatorio() {
         <p className="secao-descricao">
           Baixe as medições cadastradas em CSV. Bloco, Tratamento, Espécie e Injúria exigem
           marcar pelo menos uma opção cada (use "Marcar todos" pra incluir todos); Folhas,
-          Sobrevivência e Daninha continuam opcionais.
+          Sobrevivência, Daninha e Data continuam opcionais.
         </p>
 
         <form className="filtros-form" onSubmit={handleBaixarCsv}>
@@ -198,6 +200,15 @@ export default function Relatorio() {
                 <option value="com">Com daninha</option>
                 <option value="sem">Sem daninha</option>
               </select>
+            </label>
+
+            <label>
+              Data
+              <input
+                type="date"
+                value={filtros.data}
+                onChange={(e) => setFiltro('data', e.target.value)}
+              />
             </label>
           </div>
 

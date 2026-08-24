@@ -62,8 +62,25 @@ export function getInjurias() {
   return getJson('/dashboard/injurias')
 }
 
-export function getDiametroPorTratamento(especie) {
-  return getJson(`/dashboard/diametro-por-tratamento?especie=${encodeURIComponent(especie)}`)
+function periodoParams(dataInicio, dataFim) {
+  const params = new URLSearchParams()
+  if (dataInicio) params.set('data_inicio', dataInicio)
+  if (dataFim) params.set('data_fim', dataFim)
+  return params.toString()
+}
+
+export function getDiametroPorTratamento(especie, dataInicio, dataFim) {
+  const periodo = periodoParams(dataInicio, dataFim)
+  return getJson(
+    `/dashboard/diametro-por-tratamento?especie=${encodeURIComponent(especie)}${periodo ? `&${periodo}` : ''}`,
+  )
+}
+
+export function getAlturaPorTratamento(especie, dataInicio, dataFim) {
+  const periodo = periodoParams(dataInicio, dataFim)
+  return getJson(
+    `/dashboard/altura-por-tratamento?especie=${encodeURIComponent(especie)}${periodo ? `&${periodo}` : ''}`,
+  )
 }
 
 export function getEvolucao() {

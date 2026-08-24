@@ -1,7 +1,11 @@
 import csv
 import io
+from datetime import datetime, timedelta, timezone
 
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
+from app.models import Medicao
 
 
 def _payload(**overrides):
@@ -71,7 +75,33 @@ def test_list_medicoes_ordena_mais_recente_primeiro(client: TestClient):
 
 
 def _rows(response):
-    return list(csv.DictReader(io.StringIO(response.text)))
+    # `response.text` mantém o BOM como primeiro caractere; um leitor de
+    # CSV de verdade (Excel, `open(..., encoding="utf-8-sig")`) descarta
+    # ele sozinho antes de interpretar o cabeçalho.
+    texto = response.text.lstrip(chr(0xFEFF))
+    return list(csv.DictReader(io.StringIO(texto)))
+
+
+def _medicao_em(db: Session, data_medicao: datetime, **overrides) -> Medicao:
+    payload = _payload()
+    payload.update(overrides)
+    medicao = Medicao(
+        bloco=payload["bloco"],
+        especie=payload["especie"],
+        tratamento=payload["tratamento"],
+        altura=payload["altura"],
+        diametro1=payload["diametro1"],
+        diametro2=payload["diametro2"],
+        tem_folhas=payload["tem_folhas"],
+        viva=payload["viva"],
+        tem_daninha=payload["tem_daninha"],
+        injurias=payload["injurias"],
+        observacao=payload["observacao"],
+        data_medicao=data_medicao,
+    )
+    db.add(medicao)
+    db.commit()
+    return medicao
 
 
 def test_export_sem_filtros_retorna_tudo(client: TestClient):
@@ -97,6 +127,12 @@ def test_export_sem_dados_retorna_so_cabecalho(client: TestClient):
     assert response.status_code == 200
     assert _rows(response) == []
     assert "Bloco" in response.text
+
+
+def test_export_inclui_bom_utf8_pro_excel_nao_corromper_acentos(client: TestClient):
+    response = client.get("/medicoes/export")
+    assert response.text.startswith(chr(0xFEFF))
+    assert response.content.startswith(b"\xef\xbb\xbf")
 
 
 def test_list_blocos_retorna_valores_distintos_ordenados(client: TestClient):
@@ -185,3 +221,16 @@ def test_export_filtra_por_folhas_e_sobrevivencia(client: TestClient):
     assert rows[0]["Bloco"] == "1"
     assert rows[0]["Folhas"] == "0"
     assert rows[0]["Sobrevivência"] == "0"
+
+
+def test_export_filtra_por_dia(client: TestClient, db_session: Session):
+    dia_alvo = datetime(2026, 3, 10, 14, 30, tzinfo=timezone.utc)
+    _medicao_em(db_session, dia_alvo, bloco=1)
+    _medicao_em(db_session, dia_alvo + timedelta(hours=8), bloco=2)  # mesmo dia, outra hora
+    _medicao_em(db_session, dia_alvo - timedelta(days=1), bloco=3)  # véspera
+    _medicao_em(db_session, dia_alvo + timedelta(days=1), bloco=4)  # dia seguinte
+
+    response = client.get("/medicoes/export", params={"data": "2026-03-10"})
+    rows = _rows(response)
+
+    assert {r["Bloco"] for r in rows} == {"1", "2"}

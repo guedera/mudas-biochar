@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
+  getAlturaPorTratamento,
   getBlocos,
   getDiametroPorTratamento,
   getEvolucao,
@@ -39,6 +40,18 @@ function formatarDelta(valor) {
   return `${sinal}${valor}pp`
 }
 
+function formatarDataBr(iso) {
+  const [ano, mes, dia] = iso.split('-')
+  return `${dia}/${mes}/${ano}`
+}
+
+function formatarPeriodo(dataInicio, dataFim) {
+  if (dataInicio && dataFim) return ` (${formatarDataBr(dataInicio)} a ${formatarDataBr(dataFim)})`
+  if (dataInicio) return ` (a partir de ${formatarDataBr(dataInicio)})`
+  if (dataFim) return ` (até ${formatarDataBr(dataFim)})`
+  return ''
+}
+
 export default function Dashboard() {
   const [resumo, setResumo] = useState(null)
   const [mortalidade, setMortalidade] = useState(null)
@@ -51,6 +64,9 @@ export default function Dashboard() {
 
   const [especie, setEspecie] = useState(ESPECIES[0])
   const [diametro, setDiametro] = useState(null)
+  const [altura, setAltura] = useState(null)
+  const [dataInicio, setDataInicio] = useState('')
+  const [dataFim, setDataFim] = useState('')
 
   const [tratamento, setTratamento] = useState(TRATAMENTOS[0])
 
@@ -95,10 +111,16 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!especie) return
-    getDiametroPorTratamento(especie)
-      .then(setDiametro)
+    Promise.all([
+      getDiametroPorTratamento(especie, dataInicio, dataFim),
+      getAlturaPorTratamento(especie, dataInicio, dataFim),
+    ])
+      .then(([diametroRes, alturaRes]) => {
+        setDiametro(diametroRes)
+        setAltura(alturaRes)
+      })
       .catch((err) => setErro(err.message))
-  }, [especie])
+  }, [especie, dataInicio, dataFim])
 
   if (erro) return <p className="feedback error">{erro}</p>
   if (
@@ -170,24 +192,45 @@ export default function Dashboard() {
           }))}
         />
 
+        <div className="chart-filtros">
+          <label className="chart-filtro">
+            Espécie
+            <select value={especie} onChange={(e) => setEspecie(e.target.value)}>
+              {ESPECIES.map((e) => (
+                <option key={e} value={e}>
+                  {e}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="chart-filtro">
+            Data 1
+            <input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} />
+          </label>
+          <label className="chart-filtro">
+            Data 2
+            <input type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} />
+          </label>
+        </div>
+        <p className="secao-descricao">
+          Sem datas, mostra o estado atual de cada planta (última medição). Com Data 1 e/ou Data 2
+          preenchidas, mostra a média de todas as medições feitas dentro desse período.
+        </p>
+
         <BarChart
-          titulo={`Diâmetro médio por tratamento — ${especie}`}
+          titulo={`Diâmetro médio por tratamento — ${especie}${formatarPeriodo(dataInicio, dataFim)}`}
           colunaRotulo="Tratamento"
           colunaValor="Diâmetro médio (mm)"
           dados={(diametro ?? []).map((d) => ({ rotulo: d.tratamento, valor: d.diametro_medio }))}
           formatarValor={formatarMm}
-          extra={
-            <label className="chart-filtro">
-              Espécie
-              <select value={especie} onChange={(e) => setEspecie(e.target.value)}>
-                {ESPECIES.map((e) => (
-                  <option key={e} value={e}>
-                    {e}
-                  </option>
-                ))}
-              </select>
-            </label>
-          }
+        />
+
+        <BarChart
+          titulo={`Altura média por tratamento — ${especie}${formatarPeriodo(dataInicio, dataFim)}`}
+          colunaRotulo="Tratamento"
+          colunaValor="Altura média (cm)"
+          dados={(altura ?? []).map((a) => ({ rotulo: a.tratamento, valor: a.altura_media }))}
+          formatarValor={formatarCm}
         />
       </section>
 

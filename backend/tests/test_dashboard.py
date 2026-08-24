@@ -112,6 +112,72 @@ def test_diametro_por_tratamento_exige_especie(client: TestClient):
     assert response.status_code == 422
 
 
+def test_diametro_por_tratamento_com_periodo_usa_media_das_medicoes_do_periodo(
+    client: TestClient, db_session: Session
+):
+    janeiro = datetime(2026, 1, 15, tzinfo=timezone.utc)
+    fevereiro = datetime(2026, 2, 15, tzinfo=timezone.utc)
+
+    _medicao_em(
+        db_session, janeiro, bloco=1, especie="MB", tratamento="T1", diametro1=2.0, diametro2=None
+    )
+    _medicao_em(
+        db_session, fevereiro, bloco=1, especie="MB", tratamento="T1", diametro1=6.0, diametro2=None
+    )
+
+    # sem período: comportamento de sempre, usa só a medição mais recente
+    sem_periodo = client.get("/dashboard/diametro-por-tratamento", params={"especie": "MB"})
+    body = {r["tratamento"]: r for r in sem_periodo.json()}
+    assert body["T1"]["diametro_medio"] == 6.0
+    assert body["T1"]["n"] == 1
+
+    # período cobrindo só janeiro: usa só a medição feita naquele mês
+    so_janeiro = client.get(
+        "/dashboard/diametro-por-tratamento",
+        params={"especie": "MB", "data_inicio": "2026-01-01", "data_fim": "2026-01-31"},
+    )
+    body = {r["tratamento"]: r for r in so_janeiro.json()}
+    assert body["T1"]["diametro_medio"] == 2.0
+    assert body["T1"]["n"] == 1
+
+    # período cobrindo os dois meses: média das duas medições, não só a mais recente
+    ambos = client.get(
+        "/dashboard/diametro-por-tratamento",
+        params={"especie": "MB", "data_inicio": "2026-01-01", "data_fim": "2026-02-28"},
+    )
+    body = {r["tratamento"]: r for r in ambos.json()}
+    assert body["T1"]["diametro_medio"] == 4.0
+    assert body["T1"]["n"] == 2
+
+
+def test_altura_por_tratamento_com_periodo_usa_media_das_medicoes_do_periodo(
+    client: TestClient, db_session: Session
+):
+    janeiro = datetime(2026, 1, 15, tzinfo=timezone.utc)
+    fevereiro = datetime(2026, 2, 15, tzinfo=timezone.utc)
+
+    _medicao_em(db_session, janeiro, bloco=1, especie="MB", tratamento="T1", altura=5.0)
+    _medicao_em(db_session, fevereiro, bloco=1, especie="MB", tratamento="T1", altura=9.0)
+
+    sem_periodo = client.get("/dashboard/altura-por-tratamento", params={"especie": "MB"})
+    body = {r["tratamento"]: r for r in sem_periodo.json()}
+    assert body["T1"]["altura_media"] == 9.0
+    assert body["T1"]["n"] == 1
+
+    ambos = client.get(
+        "/dashboard/altura-por-tratamento",
+        params={"especie": "MB", "data_inicio": "2026-01-01", "data_fim": "2026-02-28"},
+    )
+    body = {r["tratamento"]: r for r in ambos.json()}
+    assert body["T1"]["altura_media"] == 7.0
+    assert body["T1"]["n"] == 2
+
+
+def test_altura_por_tratamento_exige_especie(client: TestClient):
+    response = client.get("/dashboard/altura-por-tratamento")
+    assert response.status_code == 422
+
+
 def _medicao_em(db: Session, data: datetime, **overrides) -> Medicao:
     base = _payload()
     base.update(overrides)

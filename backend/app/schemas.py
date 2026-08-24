@@ -158,6 +158,12 @@ class DiametroPorTratamento(BaseModel):
     n: int
 
 
+class AlturaPorTratamento(BaseModel):
+    tratamento: Tratamento
+    altura_media: float
+    n: int
+
+
 class PontoEvolucaoTratamento(BaseModel):
     tratamento: Tratamento
     periodo: str

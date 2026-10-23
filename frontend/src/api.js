@@ -95,10 +95,6 @@ export function getBlocos() {
   return getJson('/medicoes/blocos')
 }
 
-export function getInjuriaVsSobrevivencia() {
-  return getJson('/dashboard/injuria-vs-sobrevivencia')
-}
-
 export function listSessoes() {
   return getJson('/sessoes')
 }

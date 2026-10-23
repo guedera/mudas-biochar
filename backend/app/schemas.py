@@ -178,10 +178,3 @@ class PontoEvolucaoBloco(BaseModel):
     altura_media: float | None
     diametro_medio: float | None
     percentual_mortas_acumulado: float
-
-
-class InjuriaVsSobrevivencia(BaseModel):
-    injuria: Injuria
-    n: int
-    taxa_mortalidade: float
-    delta: float

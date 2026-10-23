@@ -6,7 +6,6 @@ import {
   getEvolucao,
   getEvolucaoPorBloco,
   getInjurias,
-  getInjuriaVsSobrevivencia,
   getMortalidadePorBloco,
   getMortalidadePorTratamento,
   getResumoDashboard,
@@ -15,7 +14,6 @@ import { ESPECIES, INJURIAS, TRATAMENTOS } from '../constants'
 import BarChart from '../components/BarChart'
 import LineChart from '../components/LineChart'
 import DonutChart from '../components/DonutChart'
-import DivergingBarChart from '../components/DivergingBarChart'
 
 // Cor fixa por tipo de injúria (pela identidade do código, nunca pela
 // posição/contagem dele nos dados) — mesma injúria sempre com a mesma cor.
@@ -33,11 +31,6 @@ function formatarMm(valor) {
 
 function formatarCm(valor) {
   return `${valor} cm`
-}
-
-function formatarDelta(valor) {
-  const sinal = valor > 0 ? '+' : ''
-  return `${sinal}${valor}pp`
 }
 
 function formatarDataBr(iso) {
@@ -59,7 +52,6 @@ export default function Dashboard() {
   const [injurias, setInjurias] = useState(null)
   const [evolucao, setEvolucao] = useState(null)
   const [evolucaoPorBloco, setEvolucaoPorBloco] = useState(null)
-  const [injuriaVsSobrevivencia, setInjuriaVsSobrevivencia] = useState(null)
   const [erro, setErro] = useState(null)
 
   const [especie, setEspecie] = useState(ESPECIES[0])
@@ -81,7 +73,6 @@ export default function Dashboard() {
       getInjurias(),
       getEvolucao(),
       getEvolucaoPorBloco(),
-      getInjuriaVsSobrevivencia(),
       getBlocos(),
     ])
       .then(
@@ -92,7 +83,6 @@ export default function Dashboard() {
           injuriasRes,
           evolucaoRes,
           evolucaoPorBlocoRes,
-          injuriaSobrevivenciaRes,
           blocosRes,
         ]) => {
           setResumo(resumoRes)
@@ -101,7 +91,6 @@ export default function Dashboard() {
           setInjurias(injuriasRes)
           setEvolucao(evolucaoRes)
           setEvolucaoPorBloco(evolucaoPorBlocoRes)
-          setInjuriaVsSobrevivencia(injuriaSobrevivenciaRes)
           setBlocosDisponiveis(blocosRes)
           setBloco((atual) => atual ?? blocosRes[0] ?? null)
         },
@@ -123,15 +112,7 @@ export default function Dashboard() {
   }, [especie, dataInicio, dataFim])
 
   if (erro) return <p className="feedback error">{erro}</p>
-  if (
-    !resumo ||
-    !mortalidade ||
-    !mortalidadePorBloco ||
-    !injurias ||
-    !evolucao ||
-    !evolucaoPorBloco ||
-    !injuriaVsSobrevivencia
-  ) {
+  if (!resumo || !mortalidade || !mortalidadePorBloco || !injurias || !evolucao || !evolucaoPorBloco) {
     return <p>Carregando...</p>
   }
 
@@ -341,24 +322,6 @@ export default function Dashboard() {
           colunaSerie="Bloco"
           maximoEixoY={100}
           cor="var(--info)"
-        />
-      </section>
-
-      <section className="dashboard-secao">
-        <h2>Injúria x sobrevivência</h2>
-        <DivergingBarChart
-          titulo="Taxa de mortalidade por injúria, comparada à taxa geral"
-          colunaRotulo="Injúria"
-          colunaValor="Diferença (pontos percentuais)"
-          dados={injuriaVsSobrevivencia.map((i) => ({ rotulo: i.injuria, valor: i.delta }))}
-          formatarValor={formatarDelta}
-          extra={
-            <p className="secao-descricao">
-              Taxa de mortalidade geral: <strong>{resumo.percentual_mortas}%</strong>. Barras à
-              direita (vermelho) = injúria com mortalidade acima da média; à esquerda (verde) =
-              abaixo da média.
-            </p>
-          }
         />
       </section>
     </div>

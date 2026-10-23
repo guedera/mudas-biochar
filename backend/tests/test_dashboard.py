@@ -311,23 +311,3 @@ def test_evolucao_por_bloco_mortalidade_acumulada_nao_reverte(
     assert pontos["2026-01"]["percentual_mortas_acumulado"] == 0.0
     assert pontos["2026-02"]["percentual_mortas_acumulado"] == 100.0
     assert pontos["2026-03"]["percentual_mortas_acumulado"] == 100.0
-
-
-def test_injuria_vs_sobrevivencia_calcula_delta_em_relacao_a_taxa_geral(client: TestClient):
-    # taxa geral: 2 de 4 mortas = 50%
-    client.post("/medicoes", json=_payload(bloco=1, viva=True, injurias=["H"]))
-    client.post("/medicoes", json=_payload(bloco=2, viva=False, injurias=["H"]))
-    client.post("/medicoes", json=_payload(bloco=3, viva=False, injurias=["AA"]))
-    client.post("/medicoes", json=_payload(bloco=4, viva=True, injurias=[]))
-
-    response = client.get("/dashboard/injuria-vs-sobrevivencia")
-    assert response.status_code == 200
-    body = {row["injuria"]: row for row in response.json()}
-
-    # H: 1 de 2 mortas = 50% -> delta 0 em relação à taxa geral (50%)
-    assert body["H"]["taxa_mortalidade"] == 50.0
-    assert body["H"]["delta"] == 0.0
-    # AA: 1 de 1 morta = 100% -> delta +50
-    assert body["AA"]["taxa_mortalidade"] == 100.0
-    assert body["AA"]["delta"] == 50.0
-    assert "P" not in body  # ninguém tem essa injúria

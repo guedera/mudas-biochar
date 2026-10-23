@@ -42,3 +42,4 @@ backend/exports/
 .DS_Store
 .idea/
 .vscode/
+*.backup

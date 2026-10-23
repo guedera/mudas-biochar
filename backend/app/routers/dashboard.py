@@ -12,7 +12,6 @@ from app.schemas import (
     AlturaPorTratamento,
     ContagemInjuria,
     DiametroPorTratamento,
-    InjuriaVsSobrevivencia,
     MortalidadePorBloco,
     MortalidadePorTratamento,
     PontoEvolucaoBloco,
@@ -294,30 +293,3 @@ def evolucao_por_bloco(db: Session = Depends(get_db)) -> list[PontoEvolucaoBloco
                 )
             )
     return resultado
-
-
-@router.get("/injuria-vs-sobrevivencia", response_model=list[InjuriaVsSobrevivencia])
-def injuria_vs_sobrevivencia(db: Session = Depends(get_db)) -> list[InjuriaVsSobrevivencia]:
-    """Para cada tipo de injúria (estado atual de cada planta), qual a taxa
-    de mortalidade entre as plantas que têm essa injúria, comparada com a
-    taxa de mortalidade geral (delta = taxa da injúria - taxa geral)."""
-    atuais = _medicoes_atuais(db)
-    total = len(atuais)
-    taxa_geral = sum(1 for m in atuais if not m.viva) / total * 100 if total else 0.0
-
-    resultado = []
-    for injuria in Injuria:
-        com_injuria = [m for m in atuais if injuria.value in m.injurias]
-        n = len(com_injuria)
-        if n == 0:
-            continue
-        taxa = sum(1 for m in com_injuria if not m.viva) / n * 100
-        resultado.append(
-            InjuriaVsSobrevivencia(
-                injuria=injuria,
-                n=n,
-                taxa_mortalidade=round(taxa, 1),
-                delta=round(taxa - taxa_geral, 1),
-            )
-        )
-    return sorted(resultado, key=lambda r: r.delta, reverse=True)

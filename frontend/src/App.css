@@ -309,6 +309,10 @@
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
+  /* Reserva o espaço do rótulo do valor (.chart-bar-valor) acima da barra mais
+     alta: a altura em % das barras é calculada sobre o que sobra, então 100%
+     nunca empurra o rótulo pra fora da trilha. */
+  padding-top: 24px;
 }
 
 .chart-bar {
@@ -316,6 +320,9 @@
   width: 100%;
   max-width: 24px;
   min-height: 2px;
+  /* sem isso o flex encolhe as barras altas pra caber o rótulo e elas ficam
+     todas com a mesma altura, independente do valor */
+  flex-shrink: 0;
   background: var(--cor-grafico, var(--accent));
   border-radius: 4px 4px 0 0;
 }
@@ -348,6 +355,10 @@
   font-weight: 600;
   color: var(--text-muted);
   margin-bottom: 4px;
+  flex-shrink: 0;
+  /* uma linha só: se quebrasse (coluna estreita no celular), passaria da
+     altura reservada no topo da trilha */
+  white-space: nowrap;
 }
 
 .chart-bar-rotulo {

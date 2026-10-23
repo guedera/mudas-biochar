@@ -95,8 +95,8 @@ export function getEvolucaoPorBloco() {
   return getJson('/dashboard/evolucao-por-bloco')
 }
 
-export function getBlocos() {
-  return getJson('/medicoes/blocos')
+export function getBlocosPorCrescimento() {
+  return getJson('/dashboard/blocos-por-crescimento')
 }
 
 export function listSessoes() {

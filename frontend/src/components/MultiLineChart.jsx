@@ -23,6 +23,10 @@ function maximoDoEixo(maiorValor, maximoFixo) {
 /** Gráfico de linhas com uma linha por série (ex. um tratamento), cada uma na
  * sua cor, e legenda ao lado. A cor vem de `cores[série]` — quem chama decide
  * pela identidade da série, nunca pela posição, então filtrar não repinta.
+ * Série sem cor em `cores` não some: vira uma linha cinza ao fundo, de
+ * contexto, sem legenda (ex. todos os blocos, com poucos em destaque).
+ * `rotulos[série]` troca o texto da legenda (padrão: o próprio valor da série)
+ * e `ordem` a ordem dela (padrão: a ordem em que as séries aparecem nos dados).
  * Passar o mouse (ou tocar/clicar) numa série da legenda destaca a linha. */
 export default function MultiLineChart({
   titulo,
@@ -31,6 +35,8 @@ export default function MultiLineChart({
   campoPeriodo,
   campoValor,
   cores,
+  rotulos = {},
+  ordem,
   formatarValor = (v) => String(v),
   colunaValor = 'Valor',
   colunaSerie = 'Tratamento',
@@ -72,6 +78,9 @@ export default function MultiLineChart({
     porSerie.get(chave).push({ periodo: linha[campoPeriodo], valor: linha[campoValor] })
   }
   const series = [...porSerie.keys()]
+  const comCor = (ordem ?? series).filter((s) => porSerie.has(s) && cores[s] !== undefined)
+  const contexto = series.filter((s) => cores[s] === undefined)
+  const rotulo = (chave) => rotulos[chave] ?? chave
 
   const maximo = maximoDoEixo(Math.max(...valores), maximoEixoY)
   const larguraUtil = largura - MARGEM.esquerda - MARGEM.direita
@@ -101,7 +110,7 @@ export default function MultiLineChart({
 
   const ativa = emHover ?? fixada
   // a série destacada é desenhada por último, por cima das outras
-  const ordemDeDesenho = ativa === null ? series : [...series.filter((s) => s !== ativa), ativa]
+  const ordemDeDesenho = ativa === null ? comCor : [...comCor.filter((s) => s !== ativa), ativa]
   const opacidade = (chave) => (ativa === null || ativa === chave ? 1 : 0.15)
 
   return (
@@ -132,6 +141,10 @@ export default function MultiLineChart({
               </g>
             ))}
 
+            {contexto.map((chave) => (
+              <path key={chave} className="multilinechart-contexto" d={caminho(porSerie.get(chave))} />
+            ))}
+
             {ordemDeDesenho.map((chave) => (
               <g key={chave} style={{ opacity: opacidade(chave) }} className="multilinechart-serie">
                 <path
@@ -140,7 +153,7 @@ export default function MultiLineChart({
                   d={caminho(porSerie.get(chave))}
                 />
                 {comValor(porSerie.get(chave)).map((p) => {
-                  const descricao = `${chave}, ${formatarPeriodo(p.periodo)}: ${formatarValor(p.valor)}`
+                  const descricao = `${rotulo(chave)}, ${formatarPeriodo(p.periodo)}: ${formatarValor(p.valor)}`
                   return (
                     <g
                       key={p.periodo}
@@ -182,7 +195,7 @@ export default function MultiLineChart({
         </div>
 
         <ul className="multilinechart-legenda" aria-label={`Legenda: ${colunaSerie}`}>
-          {series.map((chave) => (
+          {comCor.map((chave) => (
             <li key={chave}>
               <button
                 type="button"
@@ -195,7 +208,7 @@ export default function MultiLineChart({
                 onClick={() => setFixada((atual) => (atual === chave ? null : chave))}
               >
                 <span className="multilinechart-chave" style={{ background: cores[chave] }} />
-                {chave}
+                {rotulo(chave)}
               </button>
             </li>
           ))}

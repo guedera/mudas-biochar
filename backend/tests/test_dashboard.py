@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -351,5 +351,122 @@ def test_evolucao_por_especie_exige_especie_valida(client: TestClient):
 
 def test_evolucao_por_especie_sem_medicoes_devolve_lista_vazia(client: TestClient):
     response = client.get("/dashboard/evolucao-por-especie", params={"especie": "MB"})
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def _planta_com_crescimento(
+    db: Session,
+    bloco: int,
+    *,
+    ganho_altura: float,
+    ganho_diametro: float | None = 0.0,
+    dias: int = 30,
+    especie: str = "MB",
+    tratamento: str = "T1",
+):
+    """Uma planta medida duas vezes, `dias` de intervalo: altura 10 -> 10 +
+    ganho_altura e diâmetro 1 -> 1 + ganho_diametro (None = sem diâmetro)."""
+    inicio = datetime(2026, 1, 15, tzinfo=timezone.utc)
+    diametros = (None, None) if ganho_diametro is None else (1.0, 1.0 + ganho_diametro)
+    for data, altura, diametro in (
+        (inicio, 10.0, diametros[0]),
+        (inicio + timedelta(days=dias), 10.0 + ganho_altura, diametros[1]),
+    ):
+        _medicao_em(
+            db, data, bloco=bloco, especie=especie, tratamento=tratamento,
+            altura=altura, diametro1=diametro,
+        )
+
+
+def test_blocos_por_crescimento_escolhe_extremos_mediana_e_quartis(
+    client: TestClient, db_session: Session
+):
+    # 30 dias de intervalo: a taxa em cm/mês é o próprio ganho. Bloco N cresce N cm.
+    for bloco in range(1, 10):
+        _planta_com_crescimento(db_session, bloco, ganho_altura=bloco, ganho_diametro=bloco / 10)
+
+    response = client.get("/dashboard/blocos-por-crescimento")
+    assert response.status_code == 200
+    body = response.json()
+
+    assert [(b["bloco"], b["posicao"]) for b in body] == [
+        (9, "maior"),
+        (7, "75%"),
+        (5, "mediana"),
+        (3, "25%"),
+        (1, "menor"),
+    ]
+    assert body[0]["taxa_altura"] == 9.0
+    assert body[0]["taxa_diametro"] == 0.9
+    assert body[0]["score"] == 1.0
+    assert body[-1]["score"] == 0.0
+
+
+def test_blocos_por_crescimento_pesa_altura_e_diametro_igual(
+    client: TestClient, db_session: Session
+):
+    # Só pela altura (do menor pro maior) seria 3, 4, 2, 1: o bloco 2 ficaria na
+    # mediana. Com o diâmetro junto o bloco 4 passa o 2 (o 2 tem o menor diâmetro
+    # de todos) e vira a mediana.
+    _planta_com_crescimento(db_session, 1, ganho_altura=5, ganho_diametro=0.5)
+    _planta_com_crescimento(db_session, 2, ganho_altura=4, ganho_diametro=0.1)
+    _planta_com_crescimento(db_session, 3, ganho_altura=1, ganho_diametro=0.3)
+    _planta_com_crescimento(db_session, 4, ganho_altura=2, ganho_diametro=0.4)
+
+    body = client.get("/dashboard/blocos-por-crescimento").json()
+
+    assert [(b["bloco"], b["posicao"]) for b in body] == [
+        (1, "maior"),
+        (4, "mediana"),
+        (2, "25%"),
+        (3, "menor"),
+    ]
+
+
+def test_blocos_por_crescimento_pondera_pelo_tempo_entre_medicoes(
+    client: TestClient, db_session: Session
+):
+    # Mesmo bloco, duas plantas: +3 cm em 30 dias e +0 cm em 60 dias.
+    # Taxa = (3 + 0) / (30 + 60) * 30 = 1 cm/mês (e não a média das taxas, 1,5).
+    _planta_com_crescimento(db_session, 1, ganho_altura=3, dias=30, especie="MB")
+    _planta_com_crescimento(db_session, 1, ganho_altura=0, dias=60, especie="CF")
+
+    body = client.get("/dashboard/blocos-por-crescimento").json()
+
+    assert body == [
+        {"bloco": 1, "posicao": "maior", "taxa_altura": 1.0, "taxa_diametro": 0.0, "score": 0.5}
+    ]
+
+
+def test_blocos_por_crescimento_ignora_planta_sem_intervalo_para_calcular(
+    client: TestClient, db_session: Session
+):
+    _planta_com_crescimento(db_session, 1, ganho_altura=3)
+    # bloco 2: uma só medição; bloco 3: duas medições no mesmo dia
+    inicio = datetime(2026, 1, 15, tzinfo=timezone.utc)
+    _medicao_em(db_session, inicio, bloco=2, especie="MB", tratamento="T1")
+    _medicao_em(db_session, inicio, bloco=3, especie="MB", tratamento="T1")
+    _medicao_em(db_session, inicio + timedelta(hours=2), bloco=3, especie="MB", tratamento="T1")
+
+    body = client.get("/dashboard/blocos-por-crescimento").json()
+
+    assert [b["bloco"] for b in body] == [1]
+
+
+def test_blocos_por_crescimento_sem_diametro_rankeia_so_pela_altura(
+    client: TestClient, db_session: Session
+):
+    _planta_com_crescimento(db_session, 1, ganho_altura=1, ganho_diametro=None)
+    _planta_com_crescimento(db_session, 2, ganho_altura=2, ganho_diametro=None)
+
+    body = client.get("/dashboard/blocos-por-crescimento").json()
+
+    assert [(b["bloco"], b["posicao"]) for b in body] == [(2, "maior"), (1, "menor")]
+    assert all(b["taxa_diametro"] is None for b in body)
+
+
+def test_blocos_por_crescimento_sem_medicoes_devolve_lista_vazia(client: TestClient):
+    response = client.get("/dashboard/blocos-por-crescimento")
     assert response.status_code == 200
     assert response.json() == []

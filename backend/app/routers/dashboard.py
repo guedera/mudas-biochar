@@ -1,6 +1,7 @@
 from collections import Counter, defaultdict
 from collections.abc import Callable
 from datetime import date, datetime, timedelta
+from statistics import fmean
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
@@ -10,6 +11,7 @@ from app.enums import Especie, Injuria, Tratamento
 from app.models import Medicao
 from app.schemas import (
     AlturaPorTratamento,
+    BlocoPorCrescimento,
     ContagemInjuria,
     DiametroPorTratamento,
     MortalidadePorBloco,
@@ -317,3 +319,96 @@ def evolucao_por_bloco(db: Session = Depends(get_db)) -> list[PontoEvolucaoBloco
                 )
             )
     return resultado
+
+
+_DIAS_POR_MES = 30
+_INTERVALO_MINIMO_DIAS = 1
+
+# Ordem em que as posições "reivindicam" um bloco quando há poucos blocos e
+# duas posições caem no mesmo (os extremos têm prioridade sobre os quartis).
+_POSICOES = (("maior", 1.0), ("menor", 0.0), ("mediana", 0.5), ("75%", 0.75), ("25%", 0.25))
+
+
+def _taxa_de_crescimento_por_bloco(
+    todas: list[Medicao], valor_de: Callable[[Medicao], float | None]
+) -> dict[int, float]:
+    """Taxa de crescimento de cada bloco, por mês de 30 dias (cm/mês pra
+    altura, mm/mês pro diâmetro).
+
+    Cada planta (bloco+espécie+tratamento) cresce da primeira à última
+    medição dela que tem o valor; o bloco soma o crescimento de suas plantas
+    e divide pela soma dos dias entre essas medições — plantas medidas num
+    intervalo curto pesam pouco, em vez de uma taxa instável por planta.
+    Planta com uma só medição (ou com menos de 1 dia entre a primeira e a
+    última) não conta. `todas` precisa vir ordenada por `data_medicao`."""
+    por_planta: dict[tuple[int, str, str], list[tuple[datetime, float]]] = defaultdict(list)
+    for medicao in todas:
+        valor = valor_de(medicao)
+        if valor is not None:
+            chave = (medicao.bloco, medicao.especie, medicao.tratamento)
+            por_planta[chave].append((medicao.data_medicao, valor))
+
+    crescimento: dict[int, float] = defaultdict(float)
+    dias: dict[int, float] = defaultdict(float)
+    for (bloco, _, _), pontos in por_planta.items():
+        (inicio, valor_inicial), (fim, valor_final) = pontos[0], pontos[-1]
+        intervalo = (fim - inicio).total_seconds() / 86400
+        if intervalo < _INTERVALO_MINIMO_DIAS:
+            continue
+        crescimento[bloco] += valor_final - valor_inicial
+        dias[bloco] += intervalo
+    return {bloco: crescimento[bloco] / dias[bloco] * _DIAS_POR_MES for bloco in dias}
+
+
+def _posicao_no_ranking(taxas: dict[int, float]) -> dict[int, float]:
+    """Posição de cada bloco no ranking da taxa, de 0 (menor) a 1 (maior).
+    Empates dividem a posição do meio."""
+    n = len(taxas)
+    if n == 1:
+        return {bloco: 0.5 for bloco in taxas}
+    valores = list(taxas.values())
+    return {
+        bloco: (
+            sum(1 for outro in valores if outro < taxa)
+            + (sum(1 for outro in valores if outro == taxa) - 1) / 2
+        )
+        / (n - 1)
+        for bloco, taxa in taxas.items()
+    }
+
+
+@router.get("/blocos-por-crescimento", response_model=list[BlocoPorCrescimento])
+def blocos_por_crescimento(db: Session = Depends(get_db)) -> list[BlocoPorCrescimento]:
+    """Blocos que representam a distribuição da taxa de crescimento: o de
+    maior, o de 75%, a mediana, o de 25% e o de menor crescimento (do maior
+    pro menor). Altura e diâmetro pesam igual: o score do bloco é a média da
+    posição dele no ranking de cada um (ver `_taxa_de_crescimento_por_bloco`).
+    Com menos de 5 blocos com taxa calculável, devolve só os que existem."""
+    todas = db.query(Medicao).order_by(Medicao.data_medicao).all()
+    taxas_altura = _taxa_de_crescimento_por_bloco(todas, lambda m: m.altura)
+    taxas_diametro = _taxa_de_crescimento_por_bloco(todas, _diametro_efetivo)
+
+    posicoes = [_posicao_no_ranking(taxas) for taxas in (taxas_altura, taxas_diametro) if taxas]
+    blocos = set(taxas_altura) | set(taxas_diametro)
+    if not blocos:
+        return []
+    score = {bloco: fmean(p[bloco] for p in posicoes if bloco in p) for bloco in blocos}
+
+    ranking = sorted(blocos, key=lambda bloco: (score[bloco], bloco))  # do menor pro maior
+    escolhidos: dict[int, str] = {}
+    for posicao, fracao in _POSICOES:
+        escolhidos.setdefault(int(fracao * (len(ranking) - 1) + 0.5), posicao)
+
+    def arredondar(taxas: dict[int, float], bloco: int, casas: int) -> float | None:
+        return round(taxas[bloco], casas) if bloco in taxas else None
+
+    return [
+        BlocoPorCrescimento(
+            bloco=ranking[indice],
+            posicao=escolhidos[indice],
+            taxa_altura=arredondar(taxas_altura, ranking[indice], 2),
+            taxa_diametro=arredondar(taxas_diametro, ranking[indice], 3),
+            score=round(score[ranking[indice]], 3),
+        )
+        for indice in sorted(escolhidos, reverse=True)
+    ]

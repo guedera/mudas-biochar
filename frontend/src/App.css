@@ -454,56 +454,6 @@
   font-size: 1.1rem;
 }
 
-.linechart {
-  width: 100%;
-  height: auto;
-  overflow: visible;
-}
-
-.linechart-grid {
-  stroke: var(--border);
-  stroke-width: 1;
-}
-
-.linechart-contexto {
-  fill: none;
-  stroke: var(--text-muted);
-  stroke-width: 2;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-  opacity: 0.35;
-}
-
-.linechart-destaque {
-  fill: none;
-  stroke: var(--cor-grafico, var(--accent));
-  stroke-width: 2;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-}
-
-.linechart-ponto {
-  fill: var(--cor-grafico, var(--accent));
-  stroke: var(--bg);
-  stroke-width: 2;
-}
-
-.linechart-ponto:focus-visible {
-  outline: 2px solid var(--cor-grafico, var(--accent));
-  outline-offset: 2px;
-}
-
-.linechart-rotulo {
-  fill: var(--text);
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.linechart-eixo-x {
-  fill: var(--text-muted);
-  font-size: 10px;
-}
-
 .multilinechart {
   display: flex;
   align-items: flex-start;
@@ -538,6 +488,16 @@
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+/* séries sem cor definida: ao fundo, cinza, só pra dar contexto */
+.multilinechart-contexto {
+  fill: none;
+  stroke: var(--text-muted);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.35;
 }
 
 /* anel da cor da superfície: o marcador não "some" onde cruza outra linha */

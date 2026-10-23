@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
@@ -178,3 +179,11 @@ class PontoEvolucaoBloco(BaseModel):
     altura_media: float | None
     diametro_medio: float | None
     percentual_mortas_acumulado: float
+
+
+class BlocoPorCrescimento(BaseModel):
+    bloco: int
+    posicao: Literal["maior", "75%", "mediana", "25%", "menor"]
+    taxa_altura: float | None
+    taxa_diametro: float | None
+    score: float

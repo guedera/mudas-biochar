@@ -87,6 +87,10 @@ export function getEvolucao() {
   return getJson('/dashboard/evolucao')
 }
 
+export function getEvolucaoPorEspecie(especie) {
+  return getJson(`/dashboard/evolucao-por-especie?especie=${encodeURIComponent(especie)}`)
+}
+
 export function getEvolucaoPorBloco() {
   return getJson('/dashboard/evolucao-por-bloco')
 }

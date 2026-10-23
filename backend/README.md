@@ -30,5 +30,6 @@ uv run pytest
 - `GET /dashboard/injurias` — contagem de cada tipo de injúria.
 - `GET /dashboard/diametro-por-tratamento?especie=` — diâmetro médio por tratamento, para uma espécie (`especie` obrigatório).
 - `GET /dashboard/evolucao` — por tratamento e período (mês, `YYYY-MM`): altura média e diâmetro médio das medições daquele mês, e % de mortalidade acumulada (planta conta como morta a partir do mês da primeira medição em que ela aparece morta; nunca "ressuscita", então esse % nunca cai).
+- `GET /dashboard/evolucao-por-especie?especie=` — igual a `evolucao`, mas só com as medições de uma espécie (`especie` obrigatório): uma série por tratamento daquela espécie.
 
 `resumo`, `mortalidade-por-tratamento`, `injurias` e `diametro-por-tratamento` consideram o **estado atual de cada planta** (bloco+espécie+tratamento): usam só a medição mais recente dela, mesmo que medições anteriores mostrem um estado diferente (ex. viva antes, morta na mais recente = conta como morta). `evolucao` é a exceção: usa todas as medições, agrupadas por mês, pra mostrar a evolução ao longo do tempo.

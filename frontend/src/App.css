@@ -504,6 +504,119 @@
   font-size: 10px;
 }
 
+.multilinechart {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.multilinechart-plot {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.multilinechart-plot svg {
+  display: block;
+}
+
+.multilinechart-grade {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.multilinechart-eixo {
+  fill: var(--text-muted);
+  font-size: 11px;
+}
+
+.multilinechart-serie {
+  transition: opacity 0.15s;
+}
+
+.multilinechart-linha {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* anel da cor da superfície: o marcador não "some" onde cruza outra linha */
+.multilinechart-marca {
+  stroke: var(--bg);
+  stroke-width: 2;
+}
+
+.multilinechart-ponto {
+  cursor: default;
+  outline: none;
+}
+
+.multilinechart-ponto:focus-visible .multilinechart-marca {
+  stroke: var(--text);
+}
+
+.multilinechart-legenda {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.multilinechart-legenda-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.8rem;
+  text-align: left;
+}
+
+.multilinechart-legenda-item:hover,
+.multilinechart-legenda-item:focus-visible,
+.multilinechart-legenda-item[aria-pressed='true'] {
+  background: var(--bg-muted);
+}
+
+.multilinechart-legenda-item[aria-pressed='true'] {
+  font-weight: 700;
+}
+
+.multilinechart-chave {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+/* sem espaço pra legenda ao lado: ela vai pra baixo do gráfico */
+@media (max-width: 520px) {
+  .multilinechart {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .multilinechart-plot {
+    flex: none;
+  }
+
+  .multilinechart-legenda {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .multilinechart-legenda-item {
+    width: auto;
+  }
+}
+
 .sessoes {
   display: flex;
   flex-direction: column;

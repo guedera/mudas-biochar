@@ -1,12 +1,8 @@
+import { formatarPeriodo } from '../chartUtils'
+
 const LARGURA = 640
 const ALTURA = 220
 const MARGEM = { topo: 16, baixo: 28, esquerda: 8, direita: 8 }
-
-function formatarPeriodo(periodo) {
-  const [ano, mes] = periodo.split('-')
-  const nomes = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
-  return `${nomes[Number(mes) - 1]}/${ano.slice(2)}`
-}
 
 function agruparPorSerie(dados, campoSerie, campoPeriodo, campoValor) {
   const porSerie = new Map()

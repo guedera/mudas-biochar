@@ -201,14 +201,15 @@ def _periodo(medicao: Medicao) -> str:
     return medicao.data_medicao.strftime("%Y-%m")
 
 
-@router.get("/evolucao", response_model=list[PontoEvolucaoTratamento])
-def evolucao(db: Session = Depends(get_db)) -> list[PontoEvolucaoTratamento]:
+def _evolucao_por_tratamento(todas: list[Medicao]) -> list[PontoEvolucaoTratamento]:
     """Evolução mês a mês de cada tratamento, ao longo de todas as medições
-    (não só a mais recente): altura média, diâmetro médio (das medições
-    daquele mês) e % de mortalidade acumulada (planta conta como morta a
-    partir do mês da primeira medição em que ela aparece morta — sobrevivência
-    não "ressuscita", então esse % nunca cai)."""
-    todas = db.query(Medicao).order_by(Medicao.data_medicao).all()
+    recebidas (não só a mais recente): altura média, diâmetro médio (das
+    medições daquele mês) e % de mortalidade acumulada (planta conta como
+    morta a partir do mês da primeira medição em que ela aparece morta —
+    sobrevivência não "ressuscita", então esse % nunca cai).
+
+    `todas` precisa vir ordenada por `data_medicao`: a "primeira morte" de
+    cada planta é a primeira que aparece nessa ordem."""
     if not todas:
         return []
 
@@ -249,6 +250,29 @@ def evolucao(db: Session = Depends(get_db)) -> list[PontoEvolucaoTratamento]:
                 )
             )
     return resultado
+
+
+@router.get("/evolucao", response_model=list[PontoEvolucaoTratamento])
+def evolucao(db: Session = Depends(get_db)) -> list[PontoEvolucaoTratamento]:
+    """Evolução mês a mês de cada tratamento, com as medições de todas as
+    espécies — ver `_evolucao_por_tratamento` pra semântica."""
+    todas = db.query(Medicao).order_by(Medicao.data_medicao).all()
+    return _evolucao_por_tratamento(todas)
+
+
+@router.get("/evolucao-por-especie", response_model=list[PontoEvolucaoTratamento])
+def evolucao_por_especie(
+    especie: Especie, db: Session = Depends(get_db)
+) -> list[PontoEvolucaoTratamento]:
+    """Igual a `/evolucao`, mas só com as medições de uma espécie: uma linha
+    por tratamento daquela espécie (`especie` obrigatório)."""
+    todas = (
+        db.query(Medicao)
+        .filter(Medicao.especie == especie.value)
+        .order_by(Medicao.data_medicao)
+        .all()
+    )
+    return _evolucao_por_tratamento(todas)
 
 
 @router.get("/evolucao-por-bloco", response_model=list[PontoEvolucaoBloco])

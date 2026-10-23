@@ -5,6 +5,7 @@ import {
   getDiametroPorTratamento,
   getEvolucao,
   getEvolucaoPorBloco,
+  getEvolucaoPorEspecie,
   getInjurias,
   getMortalidadePorBloco,
   getMortalidadePorTratamento,
@@ -13,12 +14,19 @@ import {
 import { ESPECIES, INJURIAS, TRATAMENTOS } from '../constants'
 import BarChart from '../components/BarChart'
 import LineChart from '../components/LineChart'
+import MultiLineChart from '../components/MultiLineChart'
 import DonutChart from '../components/DonutChart'
 
 // Cor fixa por tipo de injúria (pela identidade do código, nunca pela
 // posição/contagem dele nos dados) — mesma injúria sempre com a mesma cor.
 const CORES_INJURIA = Object.fromEntries(
   INJURIAS.map((codigo, i) => [codigo, `var(--series-${i + 1})`]),
+)
+
+// Mesma ideia pros tratamentos (T0-T9 -> --series-1..10): cada tratamento tem
+// sempre a mesma cor em todos os gráficos de linha.
+const CORES_TRATAMENTO = Object.fromEntries(
+  TRATAMENTOS.map((tratamento, i) => [tratamento, `var(--series-${i + 1})`]),
 )
 
 function formatarPercentual(valor) {
@@ -32,6 +40,30 @@ function formatarMm(valor) {
 function formatarCm(valor) {
   return `${valor} cm`
 }
+
+// Os 3 gráficos de linha que se repetem nas seções de evolução por espécie e
+// por tratamento.
+const METRICAS_EVOLUCAO = [
+  {
+    titulo: 'Altura média ao longo do tempo',
+    campoValor: 'altura_media',
+    formatarValor: formatarCm,
+    colunaValor: 'Altura média (cm)',
+  },
+  {
+    titulo: 'Diâmetro médio ao longo do tempo',
+    campoValor: 'diametro_medio',
+    formatarValor: formatarMm,
+    colunaValor: 'Diâmetro médio (mm)',
+  },
+  {
+    titulo: 'Mortalidade acumulada ao longo do tempo',
+    campoValor: 'percentual_mortas_acumulado',
+    formatarValor: formatarPercentual,
+    colunaValor: '% mortalidade acumulada',
+    maximoEixoY: 100,
+  },
+]
 
 function formatarDataBr(iso) {
   const [ano, mes, dia] = iso.split('-')
@@ -60,7 +92,8 @@ export default function Dashboard() {
   const [dataInicio, setDataInicio] = useState('')
   const [dataFim, setDataFim] = useState('')
 
-  const [tratamento, setTratamento] = useState(TRATAMENTOS[0])
+  const [especieEvolucao, setEspecieEvolucao] = useState(ESPECIES[0])
+  const [evolucaoEspecie, setEvolucaoEspecie] = useState(null)
 
   const [blocosDisponiveis, setBlocosDisponiveis] = useState([])
   const [bloco, setBloco] = useState(null)
@@ -110,6 +143,22 @@ export default function Dashboard() {
       })
       .catch((err) => setErro(err.message))
   }, [especie, dataInicio, dataFim])
+
+  useEffect(() => {
+    // `atual` descarta a resposta de uma espécie que já não é a selecionada
+    // (troca rápida no dropdown, resposta antiga chegando depois da nova)
+    let atual = true
+    getEvolucaoPorEspecie(especieEvolucao)
+      .then((res) => {
+        if (atual) setEvolucaoEspecie(res)
+      })
+      .catch((err) => {
+        if (atual) setErro(err.message)
+      })
+    return () => {
+      atual = false
+    }
+  }, [especieEvolucao])
 
   if (erro) return <p className="feedback error">{erro}</p>
   if (!resumo || !mortalidade || !mortalidadePorBloco || !injurias || !evolucao || !evolucaoPorBloco) {
@@ -216,55 +265,61 @@ export default function Dashboard() {
       </section>
 
       <section className="dashboard-secao">
-        <h2>Evolução ao longo do tempo - por tratamento</h2>
+        <h2>Evolução ao longo do tempo - por espécie</h2>
         <p className="secao-descricao">
-          Cada gráfico destaca o tratamento escolhido (linha verde) contra os demais (cinza), mês
-          a mês, considerando todas as medições — não só a mais recente.
+          Escolha uma espécie: cada linha é um tratamento (cores na legenda), mês a mês,
+          considerando todas as medições dessa espécie — não só a mais recente. Passe o mouse (ou
+          toque) num tratamento da legenda pra destacar a linha dele.
         </p>
         <label className="chart-filtro">
-          Tratamento em destaque
-          <select value={tratamento} onChange={(e) => setTratamento(e.target.value)}>
-            {TRATAMENTOS.map((t) => (
-              <option key={t} value={t}>
-                {t}
+          Espécie
+          <select value={especieEvolucao} onChange={(e) => setEspecieEvolucao(e.target.value)}>
+            {ESPECIES.map((e) => (
+              <option key={e} value={e}>
+                {e}
               </option>
             ))}
           </select>
         </label>
 
-        <LineChart
-          titulo="Altura média ao longo do tempo"
-          dados={evolucao}
-          campoSerie="tratamento"
-          campoPeriodo="periodo"
-          campoValor="altura_media"
-          destaque={tratamento}
-          formatarValor={formatarCm}
-          colunaValor="Altura média (cm)"
-        />
+        {METRICAS_EVOLUCAO.map((metrica) => (
+          <MultiLineChart
+            key={metrica.campoValor}
+            titulo={`${metrica.titulo} — ${especieEvolucao}`}
+            dados={evolucaoEspecie ?? []}
+            campoSerie="tratamento"
+            campoPeriodo="periodo"
+            campoValor={metrica.campoValor}
+            cores={CORES_TRATAMENTO}
+            formatarValor={metrica.formatarValor}
+            colunaValor={metrica.colunaValor}
+            maximoEixoY={metrica.maximoEixoY}
+          />
+        ))}
+      </section>
 
-        <LineChart
-          titulo="Diâmetro médio ao longo do tempo"
-          dados={evolucao}
-          campoSerie="tratamento"
-          campoPeriodo="periodo"
-          campoValor="diametro_medio"
-          destaque={tratamento}
-          formatarValor={formatarMm}
-          colunaValor="Diâmetro médio (mm)"
-        />
+      <section className="dashboard-secao">
+        <h2>Evolução ao longo do tempo - por tratamento</h2>
+        <p className="secao-descricao">
+          Cada linha é um tratamento (cores na legenda), mês a mês, considerando todas as medições
+          de todas as espécies — não só a mais recente. Passe o mouse (ou toque) num tratamento da
+          legenda pra destacar a linha dele.
+        </p>
 
-        <LineChart
-          titulo="Mortalidade acumulada ao longo do tempo"
-          dados={evolucao}
-          campoSerie="tratamento"
-          campoPeriodo="periodo"
-          campoValor="percentual_mortas_acumulado"
-          destaque={tratamento}
-          formatarValor={formatarPercentual}
-          colunaValor="% mortalidade acumulada"
-          maximoEixoY={100}
-        />
+        {METRICAS_EVOLUCAO.map((metrica) => (
+          <MultiLineChart
+            key={metrica.campoValor}
+            titulo={metrica.titulo}
+            dados={evolucao}
+            campoSerie="tratamento"
+            campoPeriodo="periodo"
+            campoValor={metrica.campoValor}
+            cores={CORES_TRATAMENTO}
+            formatarValor={metrica.formatarValor}
+            colunaValor={metrica.colunaValor}
+            maximoEixoY={metrica.maximoEixoY}
+          />
+        ))}
       </section>
 
       <section className="dashboard-secao">

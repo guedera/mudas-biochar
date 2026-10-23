@@ -311,3 +311,45 @@ def test_evolucao_por_bloco_mortalidade_acumulada_nao_reverte(
     assert pontos["2026-01"]["percentual_mortas_acumulado"] == 0.0
     assert pontos["2026-02"]["percentual_mortas_acumulado"] == 100.0
     assert pontos["2026-03"]["percentual_mortas_acumulado"] == 100.0
+
+
+def test_evolucao_por_especie_so_considera_a_especie_pedida(
+    client: TestClient, db_session: Session
+):
+    janeiro = datetime(2026, 1, 15, tzinfo=timezone.utc)
+    fevereiro = datetime(2026, 2, 15, tzinfo=timezone.utc)
+
+    _medicao_em(db_session, janeiro, bloco=1, especie="MB", tratamento="T1", altura=5.0, viva=True)
+    _medicao_em(
+        db_session, fevereiro, bloco=1, especie="MB", tratamento="T1", altura=7.0, viva=False
+    )
+    _medicao_em(db_session, janeiro, bloco=2, especie="MB", tratamento="T2", altura=9.0, viva=True)
+    # outra espécie: não pode entrar nas médias nem nos tratamentos de MB
+    _medicao_em(db_session, janeiro, bloco=1, especie="CF", tratamento="T3", altura=50.0, viva=False)
+    _medicao_em(db_session, janeiro, bloco=3, especie="CF", tratamento="T1", altura=50.0, viva=False)
+
+    response = client.get("/dashboard/evolucao-por-especie", params={"especie": "MB"})
+    assert response.status_code == 200
+    pontos = {(row["tratamento"], row["periodo"]): row for row in response.json()}
+
+    assert {tratamento for tratamento, _ in pontos} == {"T1", "T2"}  # T3 é só de CF
+    assert pontos[("T1", "2026-01")]["altura_media"] == 5.0  # CF/T1 (50.0) ficou de fora
+    assert pontos[("T1", "2026-01")]["percentual_mortas_acumulado"] == 0.0
+    assert pontos[("T1", "2026-02")]["altura_media"] == 7.0
+    assert pontos[("T1", "2026-02")]["percentual_mortas_acumulado"] == 100.0
+    assert pontos[("T2", "2026-01")]["altura_media"] == 9.0
+    # T2 não foi medido em fevereiro: o ponto existe (grade completa), sem média
+    assert pontos[("T2", "2026-02")]["altura_media"] is None
+    assert pontos[("T2", "2026-02")]["percentual_mortas_acumulado"] == 0.0
+
+
+def test_evolucao_por_especie_exige_especie_valida(client: TestClient):
+    assert client.get("/dashboard/evolucao-por-especie").status_code == 422
+    response = client.get("/dashboard/evolucao-por-especie", params={"especie": "XX"})
+    assert response.status_code == 422
+
+
+def test_evolucao_por_especie_sem_medicoes_devolve_lista_vazia(client: TestClient):
+    response = client.get("/dashboard/evolucao-por-especie", params={"especie": "MB"})
+    assert response.status_code == 200
+    assert response.json() == []

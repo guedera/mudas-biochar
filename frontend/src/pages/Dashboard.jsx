@@ -284,7 +284,8 @@ export default function Dashboard() {
         </div>
         <p className="secao-descricao">
           Sem datas, mostra o estado atual de cada planta (última medição). Com Data 1 e/ou Data 2
-          preenchidas, mostra a média de todas as medições feitas dentro desse período.
+          preenchidas, mostra a média de todas as medições feitas dentro desse período. As médias
+          de altura e diâmetro consideram só plantas vivas.
         </p>
 
         <BarChart
@@ -308,8 +309,9 @@ export default function Dashboard() {
         <h2>Evolução ao longo do tempo - por espécie</h2>
         <p className="secao-descricao">
           Escolha uma espécie: cada linha é um tratamento (cores na legenda), mês a mês,
-          considerando todas as medições dessa espécie — não só a mais recente. Passe o mouse (ou
-          toque) num tratamento da legenda pra destacar a linha dele.
+          considerando todas as medições dessa espécie — não só a mais recente. Altura e diâmetro
+          médios consideram só plantas vivas; a mortalidade acumulada conta todas. Passe o mouse
+          (ou toque) num tratamento da legenda pra destacar a linha dele.
         </p>
         <label className="chart-filtro">
           Espécie
@@ -342,8 +344,9 @@ export default function Dashboard() {
         <h2>Evolução ao longo do tempo - por tratamento</h2>
         <p className="secao-descricao">
           Cada linha é um tratamento (cores na legenda), mês a mês, considerando todas as medições
-          de todas as espécies — não só a mais recente. Passe o mouse (ou toque) num tratamento da
-          legenda pra destacar a linha dele.
+          de todas as espécies — não só a mais recente. Altura e diâmetro médios consideram só
+          plantas vivas; a mortalidade acumulada conta todas. Passe o mouse (ou toque) num
+          tratamento da legenda pra destacar a linha dele.
         </p>
 
         {METRICAS_EVOLUCAO.map((metrica) => (
@@ -370,7 +373,8 @@ export default function Dashboard() {
           <strong>última taxa de crescimento</strong> da linha de cada bloco (a inclinação do
           último trecho); na mortalidade acumulada, pelo <strong>% acumulado atual</strong> (o
           ponto mais recente da linha). Os demais blocos aparecem em cinza, ao fundo. Mês a mês,
-          considerando todas as medições — não só a mais recente.
+          considerando todas as medições — não só a mais recente. Altura e diâmetro médios
+          consideram só plantas vivas; a mortalidade acumulada conta todas.
         </p>
 
         <details className="chart-tabela">

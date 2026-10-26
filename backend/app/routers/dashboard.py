@@ -56,6 +56,19 @@ def _diametro_efetivo(medicao: Medicao) -> float | None:
     return (medicao.diametro1 + medicao.diametro2) / 2
 
 
+# Planta morta é anotada em campo com altura 0.1 e diâmetro 0.01: o campo numérico
+# não aceita zero, então digitam o mínimo. Esses valores não são medida, e entrar na
+# média puxaria ela pra baixo justamente nos tratamentos que mais perdem plantas.
+# Por isso toda média de altura e diâmetro usa só medições de planta viva (a
+# mortalidade continua contando as mortas normalmente).
+def _altura_para_media(medicao: Medicao) -> float | None:
+    return medicao.altura if medicao.viva else None
+
+
+def _diametro_para_media(medicao: Medicao) -> float | None:
+    return _diametro_efetivo(medicao) if medicao.viva else None
+
+
 @router.get("/resumo", response_model=ResumoDashboard)
 def resumo(db: Session = Depends(get_db)) -> ResumoDashboard:
     atuais = _medicoes_atuais(db)
@@ -161,9 +174,9 @@ def diametro_por_tratamento(
     """Diâmetro médio por tratamento, para uma espécie — ver
     `_medicoes_para_medias` pra semântica de `data_inicio`/`data_fim`.
     Quando a planta tem Diâmetro 1 e 2 (caule quadrado), usa a média dos
-    dois."""
+    dois. Só entram plantas vivas (ver `_altura_para_media`)."""
     agrupado = _agrupar_por_tratamento(
-        _medicoes_para_medias(db, especie, data_inicio, data_fim), _diametro_efetivo
+        _medicoes_para_medias(db, especie, data_inicio, data_fim), _diametro_para_media
     )
     return [
         DiametroPorTratamento(
@@ -184,9 +197,9 @@ def altura_por_tratamento(
     db: Session = Depends(get_db),
 ) -> list[AlturaPorTratamento]:
     """Altura média por tratamento, para uma espécie — mesma semântica de
-    período que `/diametro-por-tratamento`."""
+    período que `/diametro-por-tratamento`. Só entram plantas vivas."""
     agrupado = _agrupar_por_tratamento(
-        _medicoes_para_medias(db, especie, data_inicio, data_fim), lambda m: m.altura
+        _medicoes_para_medias(db, especie, data_inicio, data_fim), _altura_para_media
     )
     return [
         AlturaPorTratamento(
@@ -206,7 +219,8 @@ def _periodo(medicao: Medicao) -> str:
 def _evolucao_por_tratamento(todas: list[Medicao]) -> list[PontoEvolucaoTratamento]:
     """Evolução mês a mês de cada tratamento, ao longo de todas as medições
     recebidas (não só a mais recente): altura média, diâmetro médio (das
-    medições daquele mês) e % de mortalidade acumulada (planta conta como
+    medições de plantas vivas daquele mês; mês sem nenhuma planta viva medida
+    fica sem média) e % de mortalidade acumulada (planta conta como
     morta a partir do mês da primeira medição em que ela aparece morta —
     sobrevivência não "ressuscita", então esse % nunca cai).
 
@@ -235,8 +249,8 @@ def _evolucao_por_tratamento(todas: list[Medicao]) -> list[PontoEvolucaoTratamen
         total_plantas = len(chaves)
         for periodo in periodos:
             do_mes = medicoes_do_periodo.get((tratamento.value, periodo), [])
-            alturas = [m.altura for m in do_mes if m.altura is not None]
-            diametros = [v for m in do_mes if (v := _diametro_efetivo(m)) is not None]
+            alturas = [v for m in do_mes if (v := _altura_para_media(m)) is not None]
+            diametros = [v for m in do_mes if (v := _diametro_para_media(m)) is not None]
             mortas_ate_aqui = sum(
                 1 for chave in chaves if primeira_morte.get(chave, _NUNCA_MORREU) <= periodo
             )
@@ -302,8 +316,8 @@ def evolucao_por_bloco(db: Session = Depends(get_db)) -> list[PontoEvolucaoBloco
         total_plantas = len(chaves)
         for periodo in periodos:
             do_mes = medicoes_do_periodo.get((bloco, periodo), [])
-            alturas = [m.altura for m in do_mes if m.altura is not None]
-            diametros = [v for m in do_mes if (v := _diametro_efetivo(m)) is not None]
+            alturas = [v for m in do_mes if (v := _altura_para_media(m)) is not None]
+            diametros = [v for m in do_mes if (v := _diametro_para_media(m)) is not None]
             mortas_ate_aqui = sum(
                 1 for chave in chaves if primeira_morte.get(chave, _NUNCA_MORREU) <= periodo
             )
@@ -385,8 +399,8 @@ def blocos_por_crescimento(db: Session = Depends(get_db)) -> list[BlocoPorCresci
     posição dele no ranking de cada um (ver `_taxa_de_crescimento_por_bloco`).
     Com menos de 5 blocos com taxa calculável, devolve só os que existem."""
     todas = db.query(Medicao).order_by(Medicao.data_medicao).all()
-    taxas_altura = _taxa_de_crescimento_por_bloco(todas, lambda m: m.altura)
-    taxas_diametro = _taxa_de_crescimento_por_bloco(todas, _diametro_efetivo)
+    taxas_altura = _taxa_de_crescimento_por_bloco(todas, _altura_para_media)
+    taxas_diametro = _taxa_de_crescimento_por_bloco(todas, _diametro_para_media)
 
     posicoes = [_posicao_no_ranking(taxas) for taxas in (taxas_altura, taxas_diametro) if taxas]
     blocos = set(taxas_altura) | set(taxas_diametro)

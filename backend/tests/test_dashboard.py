@@ -210,9 +210,10 @@ def test_evolucao_calcula_media_por_periodo_e_mortalidade_acumulada(
     # planta 1 (T1): jan viva altura 5.0, fev viva altura 7.0
     _medicao_em(db_session, janeiro, bloco=1, tratamento="T1", altura=5.0, viva=True)
     _medicao_em(db_session, fevereiro, bloco=1, tratamento="T1", altura=7.0, viva=True)
-    # planta 2 (T1): jan viva altura 9.0, fev morta (morre em fevereiro)
+    # planta 2 (T1): jan viva altura 9.0, fev morta (morre em fevereiro; a planta morta
+    # é anotada em campo com altura 0.1)
     _medicao_em(db_session, janeiro, bloco=2, tratamento="T1", altura=9.0, viva=True)
-    _medicao_em(db_session, fevereiro, bloco=2, tratamento="T1", altura=9.5, viva=False)
+    _medicao_em(db_session, fevereiro, bloco=2, tratamento="T1", altura=0.1, viva=False)
 
     response = client.get("/dashboard/evolucao")
     assert response.status_code == 200
@@ -223,8 +224,8 @@ def test_evolucao_calcula_media_por_periodo_e_mortalidade_acumulada(
 
     assert jan["altura_media"] == 7.0  # media(5.0, 9.0)
     assert jan["percentual_mortas_acumulado"] == 0.0  # ninguém morreu ainda
-    assert fev["altura_media"] == 8.2  # media(7.0, 9.5) = 8.25, arredondado a 1 casa
-    assert fev["percentual_mortas_acumulado"] == 50.0  # 1 de 2 plantas morta
+    assert fev["altura_media"] == 7.0  # só a planta 1: a planta 2 morreu e não entra na média
+    assert fev["percentual_mortas_acumulado"] == 50.0  # mas conta na mortalidade: 1 de 2 plantas
 
 
 def test_evolucao_mortalidade_acumulada_nao_reverte(client: TestClient, db_session: Session):
@@ -279,7 +280,7 @@ def test_evolucao_por_bloco_calcula_media_por_periodo_e_mortalidade_acumulada(
     # bloco 1: planta 2 (jan viva altura 9.0, fev morta em fevereiro)
     _medicao_em(db_session, janeiro, bloco=1, especie="CF", tratamento="T2", altura=9.0, viva=True)
     _medicao_em(
-        db_session, fevereiro, bloco=1, especie="CF", tratamento="T2", altura=9.5, viva=False
+        db_session, fevereiro, bloco=1, especie="CF", tratamento="T2", altura=0.1, viva=False
     )
 
     response = client.get("/dashboard/evolucao-por-bloco")
@@ -291,6 +292,7 @@ def test_evolucao_por_bloco_calcula_media_por_periodo_e_mortalidade_acumulada(
 
     assert jan["altura_media"] == 7.0  # media(5.0, 9.0)
     assert jan["percentual_mortas_acumulado"] == 0.0
+    assert fev["altura_media"] == 7.0  # a planta que morreu em fevereiro não entra na média
     assert fev["percentual_mortas_acumulado"] == 50.0  # 1 de 2 plantas do bloco morreu
 
 
@@ -321,7 +323,7 @@ def test_evolucao_por_especie_so_considera_a_especie_pedida(
 
     _medicao_em(db_session, janeiro, bloco=1, especie="MB", tratamento="T1", altura=5.0, viva=True)
     _medicao_em(
-        db_session, fevereiro, bloco=1, especie="MB", tratamento="T1", altura=7.0, viva=False
+        db_session, fevereiro, bloco=1, especie="MB", tratamento="T1", altura=0.1, viva=False
     )
     _medicao_em(db_session, janeiro, bloco=2, especie="MB", tratamento="T2", altura=9.0, viva=True)
     # outra espécie: não pode entrar nas médias nem nos tratamentos de MB
@@ -335,7 +337,8 @@ def test_evolucao_por_especie_so_considera_a_especie_pedida(
     assert {tratamento for tratamento, _ in pontos} == {"T1", "T2"}  # T3 é só de CF
     assert pontos[("T1", "2026-01")]["altura_media"] == 5.0  # CF/T1 (50.0) ficou de fora
     assert pontos[("T1", "2026-01")]["percentual_mortas_acumulado"] == 0.0
-    assert pontos[("T1", "2026-02")]["altura_media"] == 7.0
+    # em fevereiro só a planta morta foi medida: sem planta viva, sem média
+    assert pontos[("T1", "2026-02")]["altura_media"] is None
     assert pontos[("T1", "2026-02")]["percentual_mortas_acumulado"] == 100.0
     assert pontos[("T2", "2026-01")]["altura_media"] == 9.0
     # T2 não foi medido em fevereiro: o ponto existe (grade completa), sem média
@@ -470,3 +473,99 @@ def test_blocos_por_crescimento_sem_medicoes_devolve_lista_vazia(client: TestCli
     response = client.get("/dashboard/blocos-por-crescimento")
     assert response.status_code == 200
     assert response.json() == []
+
+
+# --- planta morta não entra nas médias de altura e diâmetro -------------------------
+# (em campo ela é anotada com altura 0.1 e diâmetro 0.01, que não são medidas)
+
+
+def test_altura_e_diametro_por_tratamento_ignoram_planta_morta(client: TestClient):
+    client.post(
+        "/medicoes",
+        json=_payload(bloco=1, especie="MB", tratamento="T1", altura=10.0, diametro1=2.0),
+    )
+    client.post(
+        "/medicoes",
+        json=_payload(
+            bloco=2, especie="MB", tratamento="T1", altura=0.1, diametro1=0.01, viva=False
+        ),
+    )
+    # T2 só tem planta morta: não aparece nas médias
+    client.post(
+        "/medicoes",
+        json=_payload(
+            bloco=3, especie="MB", tratamento="T2", altura=0.1, diametro1=0.01, viva=False
+        ),
+    )
+
+    altura = client.get("/dashboard/altura-por-tratamento", params={"especie": "MB"}).json()
+    diametro = client.get("/dashboard/diametro-por-tratamento", params={"especie": "MB"}).json()
+
+    assert altura == [{"tratamento": "T1", "altura_media": 10.0, "n": 1}]
+    assert diametro == [{"tratamento": "T1", "diametro_medio": 2.0, "n": 1}]
+
+
+def test_medias_com_periodo_ignoram_a_medicao_da_planta_morta(
+    client: TestClient, db_session: Session
+):
+    janeiro = datetime(2026, 1, 15, tzinfo=timezone.utc)
+    fevereiro = datetime(2026, 2, 15, tzinfo=timezone.utc)
+    _medicao_em(db_session, janeiro, bloco=1, especie="MB", tratamento="T1", altura=10.0)
+    _medicao_em(
+        db_session, fevereiro, bloco=1, especie="MB", tratamento="T1", altura=0.1, viva=False
+    )
+
+    response = client.get(
+        "/dashboard/altura-por-tratamento",
+        params={"especie": "MB", "data_inicio": "2026-01-01", "data_fim": "2026-02-28"},
+    )
+
+    assert response.json() == [{"tratamento": "T1", "altura_media": 10.0, "n": 1}]
+
+
+def test_evolucao_mes_so_com_planta_morta_fica_sem_media_mas_conta_na_mortalidade(
+    client: TestClient, db_session: Session
+):
+    janeiro = datetime(2026, 1, 15, tzinfo=timezone.utc)
+    fevereiro = datetime(2026, 2, 15, tzinfo=timezone.utc)
+    _medicao_em(db_session, janeiro, bloco=1, tratamento="T1", altura=10.0, diametro1=2.0)
+    _medicao_em(
+        db_session, fevereiro, bloco=1, tratamento="T1", altura=0.1, diametro1=0.01, viva=False
+    )
+
+    pontos = {
+        (r["tratamento"], r["periodo"]): r for r in client.get("/dashboard/evolucao").json()
+    }
+    por_bloco = {(r["bloco"], r["periodo"]): r for r in client.get("/dashboard/evolucao-por-bloco").json()}
+
+    for fev in (pontos[("T1", "2026-02")], por_bloco[(1, "2026-02")]):
+        assert fev["altura_media"] is None
+        assert fev["diametro_medio"] is None
+        assert fev["percentual_mortas_acumulado"] == 100.0
+    assert pontos[("T1", "2026-01")]["altura_media"] == 10.0
+    assert por_bloco[(1, "2026-01")]["diametro_medio"] == 2.0
+
+
+def test_blocos_por_crescimento_ignora_a_medicao_de_planta_morta(
+    client: TestClient, db_session: Session
+):
+    # planta A: cresce 3 cm em 30 dias
+    _planta_com_crescimento(db_session, 1, ganho_altura=3, especie="MB")
+    # planta B, mesmo bloco: viva em jan (10 cm) e morta em fev (anotada com 0.1)
+    inicio = datetime(2026, 1, 15, tzinfo=timezone.utc)
+    _medicao_em(db_session, inicio, bloco=1, especie="CF", tratamento="T1", altura=10.0)
+    _medicao_em(
+        db_session,
+        inicio + timedelta(days=30),
+        bloco=1,
+        especie="CF",
+        tratamento="T1",
+        altura=0.1,
+        diametro1=0.01,
+        viva=False,
+    )
+
+    body = client.get("/dashboard/blocos-por-crescimento").json()
+
+    # contando a morta seria (3 + (0.1 - 10)) / 2 = -3.45 cm/mês
+    assert body[0]["taxa_altura"] == 3.0

@@ -11,7 +11,11 @@ import {
   getResumoDashboard,
 } from '../api'
 import { ESPECIES, INJURIAS, TRATAMENTOS } from '../constants'
-import { POSICOES_DA_DISTRIBUICAO, blocosPorValorAtual } from '../chartUtils'
+import {
+  POSICOES_DA_DISTRIBUICAO,
+  blocosPorTaxaAtual,
+  blocosPorValorAtual,
+} from '../chartUtils'
 import BarChart from '../components/BarChart'
 import MultiLineChart from '../components/MultiLineChart'
 import DonutChart from '../components/DonutChart'
@@ -28,9 +32,10 @@ const CORES_TRATAMENTO = Object.fromEntries(
   TRATAMENTOS.map((tratamento, i) => [tratamento, `var(--series-${i + 1})`]),
 )
 
-// Os blocos em cor no "por bloco" são posições na distribuição do valor atual
-// (o número do bloco que ocupa cada posição muda quando entram medições novas),
-// então a cor segue a posição — a mesma posição tem sempre a mesma cor.
+// Os blocos em cor no "por bloco" são posições na distribuição do critério de
+// cada gráfico (o número do bloco que ocupa cada posição muda quando entram
+// medições novas), então a cor segue a posição — a mesma posição tem sempre a
+// mesma cor.
 const COR_POSICAO_BLOCO = {
   maior: 'var(--series-1)',
   '75%': 'var(--series-2)',
@@ -51,6 +56,12 @@ function formatarCm(valor) {
   return `${valor} cm`
 }
 
+// taxa de crescimento com sinal e 2 casas: +1.93, -0.40
+function formatarTaxa(taxa) {
+  const arredondada = Math.round(taxa * 100) / 100
+  return `${arredondada > 0 ? '+' : ''}${arredondada.toFixed(2)}`
+}
+
 // Os 3 gráficos de linha que se repetem nas seções de evolução por espécie e
 // por tratamento.
 const METRICAS_EVOLUCAO = [
@@ -59,18 +70,27 @@ const METRICAS_EVOLUCAO = [
     campoValor: 'altura_media',
     formatarValor: formatarCm,
     colunaValor: 'Altura média (cm)',
+    // como os blocos em cor do "por bloco" são escolhidos: pela última taxa de
+    // crescimento da linha ('taxa') ou pelo valor atual dela ('valor')
+    criterioDestaque: 'taxa',
+    colunaDestaque: 'Altura (cm/mês)',
   },
   {
     titulo: 'Diâmetro médio ao longo do tempo',
     campoValor: 'diametro_medio',
     formatarValor: formatarMm,
     colunaValor: 'Diâmetro médio (mm)',
+    criterioDestaque: 'taxa',
+    colunaDestaque: 'Diâmetro (mm/mês)',
   },
   {
     titulo: 'Mortalidade acumulada ao longo do tempo',
     campoValor: 'percentual_mortas_acumulado',
     formatarValor: formatarPercentual,
     colunaValor: '% mortalidade acumulada',
+    // na mortalidade a taxa empata em zero na maioria dos blocos: vale o nível atual
+    criterioDestaque: 'valor',
+    colunaDestaque: 'Mortalidade acumulada atual (%)',
     // a mortalidade é baixa: o eixo vai até 25% (e cresce sozinho se algum
     // dado passar disso, em vez de cortar a linha)
     eixoYAte: 25,
@@ -170,11 +190,13 @@ export default function Dashboard() {
     return <p>Carregando...</p>
   }
 
-  // Em cada gráfico "por bloco", os blocos em cor são os de menor/25%/mediana/75%/maior
-  // valor ATUAL daquela medida — calculado dos mesmos pontos que o gráfico desenha, então a
-  // legenda sempre bate com a linha que termina mais alta (ou mais baixa) na tela.
+  // Em cada gráfico "por bloco", os blocos em cor são os de menor/25%/mediana/75%/maior pelo
+  // critério daquela medida (a última taxa de crescimento da linha, ou o valor atual dela),
+  // calculado dos mesmos pontos que o gráfico desenha.
   const graficosPorBloco = METRICAS_EVOLUCAO.map((metrica) => {
-    const destaques = blocosPorValorAtual(evolucaoPorBloco, metrica.campoValor)
+    const escolherBlocos =
+      metrica.criterioDestaque === 'valor' ? blocosPorValorAtual : blocosPorTaxaAtual
+    const destaques = escolherBlocos(evolucaoPorBloco, metrica.campoValor)
     return {
       metrica,
       destaques,
@@ -344,25 +366,30 @@ export default function Dashboard() {
         <h2>Evolução ao longo do tempo — por bloco</h2>
         <p className="secao-descricao">
           Em cada gráfico, os blocos em cor (legenda) são os de <strong>menor</strong>, 25%,{' '}
-          <strong>mediana</strong>, 75% e <strong>maior</strong> valor <strong>atual</strong> daquela
-          medida — o ponto mais recente de cada linha. Os demais blocos aparecem em cinza, ao
-          fundo. Mês a mês, considerando todas as medições — não só a mais recente.
+          <strong>mediana</strong>, 75% e <strong>maior</strong>. Na altura e no diâmetro, pela{' '}
+          <strong>última taxa de crescimento</strong> da linha de cada bloco (a inclinação do
+          último trecho); na mortalidade acumulada, pelo <strong>% acumulado atual</strong> (o
+          ponto mais recente da linha). Os demais blocos aparecem em cinza, ao fundo. Mês a mês,
+          considerando todas as medições — não só a mais recente.
         </p>
 
         <details className="chart-tabela">
           <summary>Como os blocos foram escolhidos</summary>
           <p className="secao-descricao">
-            Cada bloco entra com o valor do ponto mais recente da linha dele (a média das medições
-            do último mês em que foi medido). Os blocos são ordenados por esse valor, em cada
-            medida, e os cinco em destaque são o primeiro, o do quarto de baixo, o do meio, o do
-            quarto de cima e o último. Por isso o bloco em cor muda de um gráfico para o outro.
+            Na altura e no diâmetro, a taxa de um bloco é quanto a média dele variou entre os dois
+            últimos pontos da linha, dividida pelos meses entre eles (por exemplo, de setembro para
+            outubro); ela pode ser negativa, e bloco com um ponto só não tem taxa e fica em cinza.
+            Na mortalidade acumulada vale o nível: o % do ponto mais recente da linha. Em cada
+            medida os blocos são ordenados pelo critério dela e os cinco em destaque são o menor, o
+            do quarto de baixo, o do meio, o do quarto de cima e o maior. Por isso o bloco em cor
+            muda de um gráfico para o outro.
           </p>
           <table>
             <thead>
               <tr>
                 <th>Posição</th>
                 {graficosPorBloco.map(({ metrica }) => (
-                  <th key={metrica.campoValor}>{metrica.colunaValor}</th>
+                  <th key={metrica.campoValor}>{metrica.colunaDestaque}</th>
                 ))}
               </tr>
             </thead>
@@ -372,11 +399,12 @@ export default function Dashboard() {
                   <td>{posicao}</td>
                   {graficosPorBloco.map(({ metrica, destaques }) => {
                     const d = destaques.find((x) => x.posicao === posicao)
-                    return (
-                      <td key={metrica.campoValor}>
-                        {d ? `Bloco ${d.bloco} · ${metrica.formatarValor(d.valor)}` : '—'}
-                      </td>
-                    )
+                    if (!d) return <td key={metrica.campoValor}>—</td>
+                    const medida =
+                      metrica.criterioDestaque === 'valor'
+                        ? metrica.formatarValor(d.valor)
+                        : formatarTaxa(d.taxa)
+                    return <td key={metrica.campoValor}>{`Bloco ${d.bloco} · ${medida}`}</td>
                   })}
                 </tr>
               ))}

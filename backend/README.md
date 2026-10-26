@@ -24,6 +24,8 @@ uv run pytest
 - `POST /medicoes` — cria uma medição.
 - `GET /medicoes?bloco=&especie=&tratamento=` — lista medições (mais recentes primeiro); filtrar pelos três campos juntos retorna o histórico de uma planta específica ao longo do tempo.
 - `GET /medicoes/blocos` — lista os números de bloco distintos já cadastrados.
+- `GET /medicoes/tabela?bloco=&especie=&tratamento=&pagina=&por_pagina=` — uma página da tabela de medições, mais recentes primeiro (`por_pagina` padrão 50, máximo 200). Devolve `itens`, `total` (já com os filtros), `pagina`, `por_pagina` e `total_paginas`.
+- `DELETE /medicoes/{id}` — exclui uma medição definitiva (`204`; `404` se não existir). Não tem volta, e as plantas das sessões já finalizadas (histórico) não são afetadas.
 - `GET /medicoes/export?...` — baixa um CSV das medições. Todos os filtros são opcionais: `blocos` (repetível, ex. `blocos=5&blocos=10`), `especies` (repetível), `tratamentos` (repetível), `injurias` (repetível), `sem_injuria` (medições sem nenhuma injúria), `tem_folhas`, `viva`, `tem_daninha`. `injurias` e `sem_injuria` se combinam por OR: uma medição entra se tiver pelo menos uma das injúrias marcadas, ou se `sem_injuria=true` e ela não tiver nenhuma.
 - `GET /dashboard/resumo` — total de plantas, total mortas/vivas e % de mortalidade geral.
 - `GET /dashboard/mortalidade-por-tratamento` — de todas as plantas mortas, % de cada tratamento.

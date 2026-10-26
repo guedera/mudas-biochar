@@ -22,12 +22,11 @@
   --series-5: #e87ba4; /* magenta */
   --series-6: #008300; /* verde */
   --series-7: #4a3aa7; /* violeta */
-  /* 8-10: só os gráficos de linha por tratamento (T0-T9) chegam até aqui.
-     Os 3 últimos foram validados com a skill de dataviz (validate_palette.js)
-     junto com os 7 primeiros, nos dois temas. */
+  /* 8-9: só os gráficos de linha por tratamento (T0-T8) chegam até aqui.
+     Foram validados com a skill de dataviz (validate_palette.js) junto com
+     os 7 primeiros, nos dois temas. */
   --series-8: #e34948; /* vermelho */
   --series-9: #0aa0c0; /* ciano */
-  --series-10: #a05a10; /* marrom */
 
   color-scheme: light dark;
   font: 16px/1.5 system-ui, 'Segoe UI', Roboto, sans-serif;
@@ -59,7 +58,6 @@
     --series-7: #9085e9;
     --series-8: #e66767;
     --series-9: #1c9fc0;
-    --series-10: #b8742a;
   }
 }
 

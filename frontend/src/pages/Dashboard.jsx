@@ -22,7 +22,7 @@ const CORES_INJURIA = Object.fromEntries(
   INJURIAS.map((codigo, i) => [codigo, `var(--series-${i + 1})`]),
 )
 
-// Mesma ideia pros tratamentos (T0-T9 -> --series-1..10): cada tratamento tem
+// Mesma ideia pros tratamentos (T0-T8 -> --series-1..9): cada tratamento tem
 // sempre a mesma cor em todos os gráficos de linha.
 const CORES_TRATAMENTO = Object.fromEntries(
   TRATAMENTOS.map((tratamento, i) => [tratamento, `var(--series-${i + 1})`]),

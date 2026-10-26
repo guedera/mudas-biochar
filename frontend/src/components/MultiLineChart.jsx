@@ -152,6 +152,13 @@ export default function MultiLineChart({
                   style={{ stroke: cores[chave] }}
                   d={caminho(porSerie.get(chave))}
                 />
+                {/* a linha tem 2px: esta faixa invisível, mais larga, é onde o mouse "acerta" */}
+                <path
+                  className="multilinechart-linha-alvo"
+                  d={caminho(porSerie.get(chave))}
+                  onMouseEnter={() => setEmHover(chave)}
+                  onMouseLeave={() => setEmHover(null)}
+                />
                 {comValor(porSerie.get(chave)).map((p) => {
                   const descricao = `${rotulo(chave)}, ${formatarPeriodo(p.periodo)}: ${formatarValor(p.valor)}`
                   return (
@@ -200,6 +207,7 @@ export default function MultiLineChart({
               <button
                 type="button"
                 className="multilinechart-legenda-item"
+                data-apagada={ativa !== null && ativa !== chave}
                 aria-pressed={fixada === chave}
                 onMouseEnter={() => setEmHover(chave)}
                 onMouseLeave={() => setEmHover(null)}

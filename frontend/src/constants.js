@@ -3,7 +3,7 @@ export const ESPECIES = [
 ]
 
 export const TRATAMENTOS = [
-  'T0', 'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9',
+  'T0', 'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8',
 ]
 
 export const INJURIAS = ['A', 'AA', 'APC', 'FS', 'FM', 'H', 'P']

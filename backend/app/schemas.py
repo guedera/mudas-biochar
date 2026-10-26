@@ -45,6 +45,14 @@ class MedicaoRead(MedicaoCreate):
     data_medicao: datetime
 
 
+class PaginaMedicoes(BaseModel):
+    itens: list[MedicaoRead]
+    total: int
+    pagina: int
+    por_pagina: int
+    total_paginas: int
+
+
 class SessaoCreate(BaseModel):
     bloco: int
 

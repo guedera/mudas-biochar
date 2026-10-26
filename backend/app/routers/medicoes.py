@@ -1,15 +1,16 @@
 import io
+import math
 from datetime import date, datetime, timedelta
 
 import pandas as pd
-from fastapi import APIRouter, Depends, Query as QueryParam
+from fastapi import APIRouter, Depends, HTTPException, Query as QueryParam
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Query, Session
 
 from app.database import get_db
 from app.enums import Especie, Injuria, Tratamento
 from app.models import Medicao
-from app.schemas import MedicaoCreate, MedicaoRead
+from app.schemas import MedicaoCreate, MedicaoRead, PaginaMedicoes
 
 router = APIRouter(prefix="/medicoes", tags=["medicoes"])
 
@@ -50,6 +51,20 @@ def _filtrar_estrutural(
     return query
 
 
+def _filtrar_planta(
+    query: Query, bloco: int | None, especie: Especie | None, tratamento: Tratamento | None
+) -> Query:
+    """Filtros por bloco, espécie e tratamento (valor único, todos opcionais)."""
+    query = _filtrar_estrutural(
+        query, bloco=bloco, tem_folhas=None, viva=None, tem_daninha=None
+    )
+    if especie is not None:
+        query = query.filter(Medicao.especie == especie.value)
+    if tratamento is not None:
+        query = query.filter(Medicao.tratamento == tratamento.value)
+    return query
+
+
 @router.post("", response_model=MedicaoRead, status_code=201)
 def create_medicao(payload: MedicaoCreate, db: Session = Depends(get_db)) -> Medicao:
     medicao = Medicao(**payload.model_dump())
@@ -71,18 +86,48 @@ def list_medicoes(
     Filtrar por bloco+especie+tratamento retorna o histórico de uma planta
     específica ao longo do tempo.
     """
-    query = _filtrar_estrutural(
-        db.query(Medicao),
-        bloco=bloco,
-        tem_folhas=None,
-        viva=None,
-        tem_daninha=None,
-    )
-    if especie is not None:
-        query = query.filter(Medicao.especie == especie.value)
-    if tratamento is not None:
-        query = query.filter(Medicao.tratamento == tratamento.value)
+    query = _filtrar_planta(db.query(Medicao), bloco, especie, tratamento)
     return query.order_by(Medicao.data_medicao.desc()).all()
+
+
+@router.get("/tabela", response_model=PaginaMedicoes)
+def tabela_medicoes(
+    bloco: int | None = None,
+    especie: Especie | None = None,
+    tratamento: Tratamento | None = None,
+    pagina: int = QueryParam(1, ge=1),
+    por_pagina: int = QueryParam(50, ge=1, le=200),
+    db: Session = Depends(get_db),
+) -> PaginaMedicoes:
+    """Uma página da tabela de medições (mais recentes primeiro), com filtros
+    opcionais por bloco, espécie e tratamento. `total` é a contagem com os
+    filtros aplicados, pra a tela montar a paginação."""
+    query = _filtrar_planta(db.query(Medicao), bloco, especie, tratamento)
+    total = query.count()
+    itens = (
+        query.order_by(Medicao.data_medicao.desc(), Medicao.id.desc())
+        .offset((pagina - 1) * por_pagina)
+        .limit(por_pagina)
+        .all()
+    )
+    return PaginaMedicoes(
+        itens=itens,
+        total=total,
+        pagina=pagina,
+        por_pagina=por_pagina,
+        total_paginas=max(1, math.ceil(total / por_pagina)),
+    )
+
+
+@router.delete("/{medicao_id}", status_code=204)
+def delete_medicao(medicao_id: int, db: Session = Depends(get_db)) -> None:
+    """Exclui uma medição definitiva. Não tem volta: as plantas das sessões
+    já finalizadas são um histórico à parte e não são afetadas."""
+    medicao = db.get(Medicao, medicao_id)
+    if medicao is None:
+        raise HTTPException(status_code=404, detail="Medição não encontrada.")
+    db.delete(medicao)
+    db.commit()
 
 
 @router.get("/blocos", response_model=list[int])

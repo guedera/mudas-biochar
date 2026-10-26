@@ -95,6 +95,24 @@ export function getEvolucaoPorBloco() {
   return getJson('/dashboard/evolucao-por-bloco')
 }
 
+export function getBlocos() {
+  return getJson('/medicoes/blocos')
+}
+
+const MEDICOES_POR_PAGINA = 50
+
+export function getMedicoesTabela(filtros, pagina) {
+  const params = new URLSearchParams({ pagina, por_pagina: MEDICOES_POR_PAGINA })
+  for (const campo of ['bloco', 'especie', 'tratamento']) {
+    if (filtros[campo]) params.set(campo, filtros[campo])
+  }
+  return getJson(`/medicoes/tabela?${params}`)
+}
+
+export function deleteMedicao(id) {
+  return deleteRequest(`/medicoes/${id}`)
+}
+
 export function getBlocosPorCrescimento() {
   return getJson('/dashboard/blocos-por-crescimento')
 }

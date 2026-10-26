@@ -27,7 +27,6 @@ class Tratamento(str, Enum):
     T6 = "T6"
     T7 = "T7"
     T8 = "T8"
-    T9 = "T9"
 
 
 class Injuria(str, Enum):

@@ -12,7 +12,7 @@
 
 ## 🌱 Contexto da pesquisa
 
-O **Leo** está conduzindo uma pesquisa sobre a **influência do biochar na saúde e no crescimento de plantas**. O experimento compara **13 espécies** sob **10 tratamentos** (T0 a T9), distribuídas em **blocos** — cada bloco é um conjunto de espécies diferentes, com tratamentos diferentes.
+O **Leo** está conduzindo uma pesquisa sobre a **influência do biochar na saúde e no crescimento de plantas**. O experimento compara **13 espécies** sob **9 tratamentos** (T0 a T8), distribuídas em **blocos** — cada bloco é um conjunto de espécies diferentes, com tratamentos diferentes.
 
 A pesquisa tem duas macro-etapas, e cada uma tem um fluxo de trabalho muito próprio:
 
@@ -74,7 +74,7 @@ flowchart TD
 
 ## 📱 O que foi construído
 
-O layout foi pensado primeiro para **celular e tablet na vertical**, que é onde a coleta acontece. O app tem quatro áreas.
+O layout foi pensado primeiro para **celular e tablet na vertical**, que é onde a coleta acontece. O app tem cinco áreas.
 
 > Os prints abaixo servem apenas para demonstrar a interface do app.
 
@@ -90,7 +90,11 @@ Cria-se uma sessão informando o **bloco**. Dentro dela, **Nova planta** registr
 
 O mesmo registro, mas **uma medição completa por vez**, direto no banco definitivo. É pouco usado, mas útil em casos pontuais — por exemplo, uma planta medida fora da passada normal. A data da medição é preenchida automaticamente.
 
-### 3. Relatório — CSV para análise externa
+### 3. Tabela de medições — achar e corrigir um dado
+
+A tabela do banco definitivo, direto na tela, das medições **mais recentes para as mais antigas** e em páginas de 50 linhas. Os filtros no topo (**bloco**, **espécie** e **tratamento**) servem para chegar a uma medição específica. Cada linha tem uma **lixeira vermelha**: ao clicar, um pequeno modal pede a confirmação (**Tenho certeza** / **Cancelar**) antes de excluir aquela medição. A exclusão é definitiva — por isso a confirmação.
+
+### 4. Relatório — CSV para análise externa
 
 Baixa o banco definitivo em **CSV**, pronto para ferramentas externas (**R**, **Python**...). Dá para filtrar por **bloco**, **tratamento**, **espécie** e **injúria** (inclusive "sem nenhuma injúria"), além de folhas, sobrevivência, daninha e data. O arquivo é gerado com codificação que o **Excel** abre sem quebrar os acentos.
 
@@ -98,7 +102,7 @@ Baixa o banco definitivo em **CSV**, pronto para ferramentas externas (**R**, **
   <img src="src/image6.png" alt="Tela de Relatório: filtros por bloco e tratamento para baixar o CSV" width="560" />
 </p>
 
-### 4. Dashboard — acompanhar o experimento ao vivo
+### 5. Dashboard — acompanhar o experimento ao vivo
 
 O dashboard foi uma iniciativa extra do desenvolvimento, para que o Leo pudesse **acompanhar os dados de forma ativa ao longo do experimento**, sem esperar a fase de análise.
 
@@ -134,7 +138,7 @@ Cada linha do banco definitivo é **uma medição de uma planta** em um momento.
 | --- | --- | --- |
 | **Bloco** | inteiro | identifica o bloco da planta |
 | **Espécie** | lista | `CF` `CV` `CS` `ED` `ES` `MB` `MC` `MF` `MH` `MG` `JP` `ST` `SG` |
-| **Tratamento** | lista | `T0` a `T9` |
+| **Tratamento** | lista | `T0` a `T8` |
 | **Altura** | decimal (1 casa), opcional | em cm |
 | **Diâmetro 1** | decimal (2 casas), opcional | em mm |
 | **Diâmetro 2** | decimal (2 casas), opcional | só para caule quadrado (2 medidas); caule redondo deixa vazio |
@@ -282,4 +286,5 @@ render.yaml configuração do serviço da API no Render
 - **Listas fechadas.** Espécie e tratamento são escolhidos em listas, injúrias em caixas de seleção e folhas / viva / daninha em botões liga-desliga — não existe digitar uma espécie errada.
 - **Nada de redigitar.** O dado é registrado uma vez, na hora, e vai direto para o banco.
 - **Sessão consistente.** Não deixa repetir espécie + tratamento no mesmo bloco, nem finalizar com plantas incompletas.
+- **Dá para corrigir.** Uma medição lançada por engano é encontrada na tabela, pelos filtros, e excluída com confirmação.
 - **Data e hora automáticas** em cada medição.

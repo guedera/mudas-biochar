@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
   getAlturaPorTratamento,
-  getBlocosPorCrescimento,
   getDiametroPorTratamento,
   getEvolucao,
   getEvolucaoPorBloco,
@@ -12,6 +11,7 @@ import {
   getResumoDashboard,
 } from '../api'
 import { ESPECIES, INJURIAS, TRATAMENTOS } from '../constants'
+import { POSICOES_DA_DISTRIBUICAO, blocosPorValorAtual } from '../chartUtils'
 import BarChart from '../components/BarChart'
 import MultiLineChart from '../components/MultiLineChart'
 import DonutChart from '../components/DonutChart'
@@ -28,9 +28,9 @@ const CORES_TRATAMENTO = Object.fromEntries(
   TRATAMENTOS.map((tratamento, i) => [tratamento, `var(--series-${i + 1})`]),
 )
 
-// Os blocos em cor no "por bloco" são posições no ranking de crescimento (o
-// número do bloco muda quando entram medições novas), então a cor segue a
-// posição — a mesma posição tem sempre a mesma cor.
+// Os blocos em cor no "por bloco" são posições na distribuição do valor atual
+// (o número do bloco que ocupa cada posição muda quando entram medições novas),
+// então a cor segue a posição — a mesma posição tem sempre a mesma cor.
 const COR_POSICAO_BLOCO = {
   maior: 'var(--series-1)',
   '75%': 'var(--series-2)',
@@ -71,7 +71,9 @@ const METRICAS_EVOLUCAO = [
     campoValor: 'percentual_mortas_acumulado',
     formatarValor: formatarPercentual,
     colunaValor: '% mortalidade acumulada',
-    maximoEixoY: 100,
+    // a mortalidade é baixa: o eixo vai até 25% (e cresce sozinho se algum
+    // dado passar disso, em vez de cortar a linha)
+    eixoYAte: 25,
   },
 ]
 
@@ -105,8 +107,6 @@ export default function Dashboard() {
   const [especieEvolucao, setEspecieEvolucao] = useState(ESPECIES[0])
   const [evolucaoEspecie, setEvolucaoEspecie] = useState(null)
 
-  const [blocosDestaque, setBlocosDestaque] = useState(null)
-
   useEffect(() => {
     Promise.all([
       getResumoDashboard(),
@@ -115,7 +115,6 @@ export default function Dashboard() {
       getInjurias(),
       getEvolucao(),
       getEvolucaoPorBloco(),
-      getBlocosPorCrescimento(),
     ])
       .then(
         ([
@@ -125,7 +124,6 @@ export default function Dashboard() {
           injuriasRes,
           evolucaoRes,
           evolucaoPorBlocoRes,
-          blocosDestaqueRes,
         ]) => {
           setResumo(resumoRes)
           setMortalidade(mortalidadeRes)
@@ -133,7 +131,6 @@ export default function Dashboard() {
           setInjurias(injuriasRes)
           setEvolucao(evolucaoRes)
           setEvolucaoPorBloco(evolucaoPorBlocoRes)
-          setBlocosDestaque(blocosDestaqueRes)
         },
       )
       .catch((err) => setErro(err.message))
@@ -169,24 +166,22 @@ export default function Dashboard() {
   }, [especieEvolucao])
 
   if (erro) return <p className="feedback error">{erro}</p>
-  if (
-    !resumo ||
-    !mortalidade ||
-    !mortalidadePorBloco ||
-    !injurias ||
-    !evolucao ||
-    !evolucaoPorBloco ||
-    !blocosDestaque
-  ) {
+  if (!resumo || !mortalidade || !mortalidadePorBloco || !injurias || !evolucao || !evolucaoPorBloco) {
     return <p>Carregando...</p>
   }
 
-  const coresBlocos = Object.fromEntries(
-    blocosDestaque.map((b) => [b.bloco, COR_POSICAO_BLOCO[b.posicao]]),
-  )
-  const rotulosBlocos = Object.fromEntries(
-    blocosDestaque.map((b) => [b.bloco, `Bloco ${b.bloco} · ${b.posicao}`]),
-  )
+  // Em cada gráfico "por bloco", os blocos em cor são os de menor/25%/mediana/75%/maior
+  // valor ATUAL daquela medida — calculado dos mesmos pontos que o gráfico desenha, então a
+  // legenda sempre bate com a linha que termina mais alta (ou mais baixa) na tela.
+  const graficosPorBloco = METRICAS_EVOLUCAO.map((metrica) => {
+    const destaques = blocosPorValorAtual(evolucaoPorBloco, metrica.campoValor)
+    return {
+      metrica,
+      destaques,
+      cores: Object.fromEntries(destaques.map((d) => [d.bloco, COR_POSICAO_BLOCO[d.posicao]])),
+      rotulos: Object.fromEntries(destaques.map((d) => [d.bloco, `Bloco ${d.bloco} · ${d.posicao}`])),
+    }
+  })
 
   return (
     <div className="dashboard">
@@ -316,7 +311,7 @@ export default function Dashboard() {
             cores={CORES_TRATAMENTO}
             formatarValor={metrica.formatarValor}
             colunaValor={metrica.colunaValor}
-            maximoEixoY={metrica.maximoEixoY}
+            eixoYAte={metrica.eixoYAte}
           />
         ))}
       </section>
@@ -340,7 +335,7 @@ export default function Dashboard() {
             cores={CORES_TRATAMENTO}
             formatarValor={metrica.formatarValor}
             colunaValor={metrica.colunaValor}
-            maximoEixoY={metrica.maximoEixoY}
+            eixoYAte={metrica.eixoYAte}
           />
         ))}
       </section>
@@ -348,50 +343,48 @@ export default function Dashboard() {
       <section className="dashboard-secao">
         <h2>Evolução ao longo do tempo — por bloco</h2>
         <p className="secao-descricao">
-          Os blocos em cor (legenda) são escolhidos pela taxa de crescimento em altura e diâmetro:
-          o de maior crescimento, o de 75%, a mediana, o de 25% e o de menor crescimento. Os demais
-          blocos aparecem em cinza, ao fundo. Mês a mês, considerando todas as medições — não só a
-          mais recente.
+          Em cada gráfico, os blocos em cor (legenda) são os de <strong>menor</strong>, 25%,{' '}
+          <strong>mediana</strong>, 75% e <strong>maior</strong> valor <strong>atual</strong> daquela
+          medida — o ponto mais recente de cada linha. Os demais blocos aparecem em cinza, ao
+          fundo. Mês a mês, considerando todas as medições — não só a mais recente.
         </p>
 
-        {blocosDestaque.length === 0 ? (
+        <details className="chart-tabela">
+          <summary>Como os blocos foram escolhidos</summary>
           <p className="secao-descricao">
-            Ainda não há plantas medidas mais de uma vez, com pelo menos 1 dia de intervalo, pra
-            calcular a taxa de crescimento — por isso nenhum bloco está em destaque.
+            Cada bloco entra com o valor do ponto mais recente da linha dele (a média das medições
+            do último mês em que foi medido). Os blocos são ordenados por esse valor, em cada
+            medida, e os cinco em destaque são o primeiro, o do quarto de baixo, o do meio, o do
+            quarto de cima e o último. Por isso o bloco em cor muda de um gráfico para o outro.
           </p>
-        ) : (
-          <details className="chart-tabela">
-            <summary>Como os blocos foram escolhidos</summary>
-            <p className="secao-descricao">
-              A taxa de crescimento de um bloco soma o quanto as plantas dele cresceram entre a
-              primeira e a última medição e divide pelos dias entre elas (por mês de 30 dias).
-              Altura e diâmetro pesam igual: o bloco é posicionado pela média da posição dele nos
-              dois rankings. Só entram plantas medidas pelo menos duas vezes.
-            </p>
-            <table>
-              <thead>
-                <tr>
-                  <th>Posição</th>
-                  <th>Bloco</th>
-                  <th>Altura (cm/mês)</th>
-                  <th>Diâmetro (mm/mês)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {blocosDestaque.map((b) => (
-                  <tr key={b.bloco}>
-                    <td>{b.posicao}</td>
-                    <td>{b.bloco}</td>
-                    <td>{b.taxa_altura ?? '—'}</td>
-                    <td>{b.taxa_diametro ?? '—'}</td>
-                  </tr>
+          <table>
+            <thead>
+              <tr>
+                <th>Posição</th>
+                {graficosPorBloco.map(({ metrica }) => (
+                  <th key={metrica.campoValor}>{metrica.colunaValor}</th>
                 ))}
-              </tbody>
-            </table>
-          </details>
-        )}
+              </tr>
+            </thead>
+            <tbody>
+              {POSICOES_DA_DISTRIBUICAO.map((posicao) => (
+                <tr key={posicao}>
+                  <td>{posicao}</td>
+                  {graficosPorBloco.map(({ metrica, destaques }) => {
+                    const d = destaques.find((x) => x.posicao === posicao)
+                    return (
+                      <td key={metrica.campoValor}>
+                        {d ? `Bloco ${d.bloco} · ${metrica.formatarValor(d.valor)}` : '—'}
+                      </td>
+                    )
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </details>
 
-        {METRICAS_EVOLUCAO.map((metrica) => (
+        {graficosPorBloco.map(({ metrica, destaques, cores, rotulos }) => (
           <MultiLineChart
             key={metrica.campoValor}
             titulo={`${metrica.titulo} — por bloco`}
@@ -399,13 +392,13 @@ export default function Dashboard() {
             campoSerie="bloco"
             campoPeriodo="periodo"
             campoValor={metrica.campoValor}
-            cores={coresBlocos}
-            rotulos={rotulosBlocos}
-            ordem={blocosDestaque.map((b) => b.bloco)}
+            cores={cores}
+            rotulos={rotulos}
+            ordem={destaques.map((d) => d.bloco)}
             formatarValor={metrica.formatarValor}
             colunaValor={metrica.colunaValor}
             colunaSerie="Bloco"
-            maximoEixoY={metrica.maximoEixoY}
+            eixoYAte={metrica.eixoYAte}
           />
         ))}
       </section>

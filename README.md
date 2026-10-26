@@ -107,7 +107,7 @@ Baixa o banco definitivo em **CSV**, pronto para ferramentas externas (**R**, **
 O dashboard foi uma iniciativa extra do desenvolvimento, para que o Leo pudesse **acompanhar os dados de forma ativa ao longo do experimento**, sem esperar a fase de análise.
 
 - **Estado atual** — cada planta conta pela sua **medição mais recente** (se a última medição é "morta", ela conta como morta, mesmo que as anteriores estivessem vivas): cartões-resumo, mortalidade por tratamento e por bloco, contagem e distribuição das injúrias, e altura e diâmetro médios por tratamento para a espécie e o período escolhidos.
-- **Evolução ao longo do tempo** — altura média, diâmetro médio e mortalidade acumulada, mês a mês, **por espécie** (uma linha por tratamento), **por tratamento** e **por bloco** (os blocos de menor, 25%, mediana, 75% e maior taxa de crescimento em destaque).
+- **Evolução ao longo do tempo** — altura média, diâmetro médio e mortalidade acumulada, mês a mês, **por espécie** (uma linha por tratamento), **por tratamento** e **por bloco** (em cada gráfico, os blocos de menor, 25%, mediana, 75% e maior valor **atual** em destaque, e os demais em cinza). A mortalidade acumulada usa o eixo de 0 a 25%, que cresce sozinho se algum dado passar disso.
 
 Os gráficos são desenhados em SVG/HTML puro, têm tema claro e escuro, cores conferidas para daltonismo e uma tabela de dados em cada um (*Ver dados em tabela*).
 

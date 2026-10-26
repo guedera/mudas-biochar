@@ -113,10 +113,6 @@ export function deleteMedicao(id) {
   return deleteRequest(`/medicoes/${id}`)
 }
 
-export function getBlocosPorCrescimento() {
-  return getJson('/dashboard/blocos-por-crescimento')
-}
-
 export function listSessoes() {
   return getJson('/sessoes')
 }

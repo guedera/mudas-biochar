@@ -6,18 +6,30 @@ const MARGEM = { topo: 14, baixo: 30, esquerda: 56, direita: 14 }
 const RECUO_X = 14
 const LARGURA_INICIAL = 560
 const LARGURA_MIN = 240
-const DIVISOES_Y = 4
+const DIVISOES_PADRAO = 4
 const PASSOS_BONS = [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10]
 
 /** Máximo "redondo" do eixo Y: 4 divisões iguais, cada uma num número limpo
- * (ex. dados até 14,3 -> eixo até 16, com marcas em 0/4/8/12/16). */
-function maximoDoEixo(maiorValor, maximoFixo) {
-  if (maximoFixo) return maximoFixo
-  const bruto = maiorValor / DIVISOES_Y
+ * (ex. dados até 14,3 -> eixo até 16, com marcas em 0/4/8/12/16).
+ * `eixoYAte` é a escala que quem chama quer: o eixo vai até ela, mas cresce
+ * se os dados passarem, pra nenhuma linha ser cortada fora do gráfico. */
+function maximoDoEixo(maiorValor, eixoYAte) {
+  if (eixoYAte && maiorValor <= eixoYAte) return eixoYAte
+  const bruto = maiorValor / DIVISOES_PADRAO
   if (!(bruto > 0)) return 1
   const potencia = 10 ** Math.floor(Math.log10(bruto))
   const passo = PASSOS_BONS.find((p) => p * potencia >= bruto) * potencia
-  return passo * DIVISOES_Y
+  return passo * DIVISOES_PADRAO
+}
+
+/** Quantas divisões o eixo tem: 4, ou 5/3/2 quando 4 daria marcas com casas
+ * decimais demais (eixo até 25 -> 0/5/10/15/20/25, e não 0/6,25/12,5...). */
+function divisoesDoEixo(maximo) {
+  const marcaLimpa = (divisoes) => {
+    const passo = (maximo / divisoes) * 10
+    return Math.abs(passo - Math.round(passo)) < 1e-9
+  }
+  return [DIVISOES_PADRAO, 5, 3, 2].find(marcaLimpa) ?? DIVISOES_PADRAO
 }
 
 /** Gráfico de linhas com uma linha por série (ex. um tratamento), cada uma na
@@ -40,7 +52,7 @@ export default function MultiLineChart({
   formatarValor = (v) => String(v),
   colunaValor = 'Valor',
   colunaSerie = 'Tratamento',
-  maximoEixoY,
+  eixoYAte,
 }) {
   const [areaDoGrafico, setAreaDoGrafico] = useState(null)
   const [largura, setLargura] = useState(LARGURA_INICIAL)
@@ -82,7 +94,8 @@ export default function MultiLineChart({
   const contexto = series.filter((s) => cores[s] === undefined)
   const rotulo = (chave) => rotulos[chave] ?? chave
 
-  const maximo = maximoDoEixo(Math.max(...valores), maximoEixoY)
+  const maximo = maximoDoEixo(Math.max(...valores), eixoYAte)
+  const divisoes = divisoesDoEixo(maximo)
   const larguraUtil = largura - MARGEM.esquerda - MARGEM.direita
   const alturaUtil = ALTURA - MARGEM.topo - MARGEM.baixo
 
@@ -104,8 +117,8 @@ export default function MultiLineChart({
       .join(' ')
   }
 
-  const marcasY = Array.from({ length: DIVISOES_Y + 1 }, (_, i) =>
-    Math.round((maximo / DIVISOES_Y) * i * 100) / 100,
+  const marcasY = Array.from({ length: divisoes + 1 }, (_, i) =>
+    Math.round((maximo / divisoes) * i * 100) / 100,
   )
 
   const ativa = emHover ?? fixada
